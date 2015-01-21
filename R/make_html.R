@@ -18,15 +18,17 @@ examples.make.artciles.html = function() {
   d = d[ord,]
   d$code.str = make.code.str(d)
   
-  #d = filter(d, year*100+month >= 201405, journal != "aer")
+  d = filter(d, year*100+month >= 201405, journal == "restud")
+  
+  file="new_restud_articles.html"
+  make.long.html(d, file=file)
+  browseURL(paste0("file://", getwd(), "/",file))
+
   
   file="new_non_aer_jel_articles.html"
   make.JEL.html(d, file=file)
   browseURL(paste0("file://", getwd(), "/",file))
 
-  file="new_non_aer_articles.html"
-  make.long.html(d, file=file)
-  browseURL(paste0("file://", getwd(), "/",file))
 
   file="fav_articles.html"
   make.favorite.html(d, file=file)

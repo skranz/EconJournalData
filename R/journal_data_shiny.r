@@ -1,14 +1,97 @@
+examples.articlesApp = function() {
+  app = articlesApp()
+  runEventsApp(app)
+}
+
+
+articlesApp = function() {
+  library(shinyEvents)
+  library(shinyBS)
+  
+  init.journal.scrapper()
+  jel = jel.codes
+  
+  
+  
+  app = eventsApp()
+  
+  dt = read.complete.data()
+  dt$code.str = make.code.str(dt)
+  dt = dt[order(-dt$data.size, dt$has.data),]
+  
+  app$opt = list(
+    max.articles = 100,
+    journals = names(jis),
+    start.date = min(dt$date,na.rm=TRUE),
+    end.date = max(dt$date,na.rm=TRUE),
+    with.tags = NULL,
+    without.tags = NULL,
+    sort.by = c("data.size_desc","date")
+  )
+  
+  #rows = is.na(adt$data.size) | adt$data.size >0
+  #adt = adt[rows,]
+  adt = as.data.frame(dt)
+  if (NROW(adt)>app$opt$max.articles)
+    adt = adt[1:app$opt$max.articles,]
+  app$adt = as.data.frame(adt)
+
+  sort.fields = c("data_size","date","title", "journal")
+  sort.fields = c(sort.fields, paste0("-",sort.fields))
+  
+  app$glob$dt = dt
+  app$glob$jel = jel
+  app$glob$jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
+  app$glob$sort.fields = sort.fields
+  app$glob$jel.dt = read.articles.jel.csv()
+  
+  
+  app$ui = shinyUI(navbarPage("Reproducible Econonomics",
+    tabPanel("Articles", sidebarLayout(
+      sidebarPanel(
+        uiArticleSelectors()
+      ),
+      mainPanel(
+        uiOutput("articlesHtml") 
+      )
+    ))
+  ))
+  
+  setUI("articlesHtml",HTML(shiny.articles.html(app$adt,app=app)))
+  buttonHandler("showBtn",show.btn.click)
+  app
+}
+
+
+show.btn.click = function(app,...) {
+  opt = app$opt
+  adt = app$adt
+  fields = c("max.articles","jel", "journals","with.tags","without.tags","sort.by")
+  for (f in fields) {
+    opt[[f]] = getInputValue(f)
+  }
+  restore.point("show.btn.click")
+  
+  if (!is.null(opt$journals)) {
+    adt = filter(adt, journal %in% opt$journals)
+  }
+  
+  if (!is.null(opt$jel)) {
+    used.id = unique(app$glob$jel.dt[opt$jel]$id)
+    adt = filter(adt, id %in% used.id)
+  }
+
+  app$opt = opt
+  app$adt = adt
+  html = HTML(shiny.articles.html(app$adt,app=app))
+  setUI("articlesHtml",html)
+
+}
+
 filter.articles = function(adt,ajel.dt,journals=NULL,jel1=NULL,...) {
   restore.point("filter.articles")
   dt = as.data.table(adt)
   changed=FALSE
-  if (!is.null(journals)) {
-    if (length(journals)<length(jis)) {
-      setkey(dt,journal)
-      dt = dt[journals]
-      changed=TRUE
-    }
-  }
   if (!is.null(jel1)) {
     library(dplyr)
     id = unique(ajel.dt[jel1]$id)
@@ -24,25 +107,31 @@ filter.articles = function(adt,ajel.dt,journals=NULL,jel1=NULL,...) {
 }
 
 
-uiArticleSelectors = function(jel) {
-
+uiArticleSelectors = function(app=getApp()) {
   restore.point("uiArticleSelectors")
   cat("uiArticleSelectors")
-  journals = names(jis)
-  jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
+
+  jel.codes = app$glob$jel.codes
 
   li = as.list(journals); names(li) = journals
-  uiJournal = selectizeInput("journalsInput", "Journals:",li,selected=li, multiple=TRUE,
+  opt = app$opt
+  
+  
+  uiSortBy = selectizeInput("sort.by","Sort by",app$glob$sort.fields, selected="-data.size")  
+    
+  uiMaxArticles = numericInput("max.articles","Max. shown Articles",value = opt$max.articles)
+  
+  uiJournal = selectizeInput("journals", "Journals:",li,selected=li, multiple=TRUE,
     options = list(
       maxItems=100
     )
   )
 
-
+  jel = app$glob$jel
   jel1 = jel[jel$digits==1,] 
   jel1 = jel[order(jel$digits,jel$code),]
   li = as.list(jel1$code); names(li) = jel1$name
-  uiJel1 = selectizeInput("jel1Input", "JEL:",li,selected="L", multiple=TRUE,
+  uiJel1 = selectizeInput("jel", "JEL:",li,selected=NULL, multiple=TRUE,
     options = list(
       maxItems=30
     )
@@ -53,32 +142,32 @@ uiArticleSelectors = function(jel) {
                end   = NULL,
                format= "mm/yyyy")
 
-  tags = read.csv(paste0(main.dir,"/tags.csv"))
-  args = lapply(1:NROW(tags), function(i) {
-    bsButton(paste0("with_",tags$code[i],"_Input"), label=tags$label[i], value=tags$code[i])
-  })
-  uiWithTags=do.call(bsButtonGroup, c(list(inputId="withTagsInput", label = "with tag", toggle = "checkbox", size="small"), args))
   
-  args = lapply(1:NROW(tags), function(i) {
-    bsButton(paste0("without_",tags$code[i],"_Input"), label=tags$label[i], value=tags$code[i])
-  })
-  uiWithoutTags=do.call(bsButtonGroup, c(list(inputId="withoutTagsInput", label = "without  tag", toggle = "checkbox", size="small"), args))
+  
+  tags = read.csv(paste0(main.dir,"/tags.csv"),stringsAsFactors=FALSE)
+  tags.li = tags$code
+  names(tags.li) = tags$label
+  
+  uiWithTags=selectizeInput("with.tag",label="With Tag",choices=tags.li, multiple=TRUE)
+  uiWithoutTags=selectizeInput("without.tag",label="Without Tag",choices=tags.li, multiple=TRUE)
 
   
-  return(verticalLayout(
-    uiJournal,
-    uiJel1,
-    uiDateRange,
-    uiWithTags,
-    uiWithoutTags,
+  ui = verticalLayout(
     fluidRow(
-      HTML("<BR>"),
-      actionButton("searchButton","Search"),
-      actionButton("updateButton","Update"),
-      textOutput("buttonState")
-    )
-    
-  ))
+      actionButton("showBtn","Show"),
+      actionButton("updateBtn","Update")
+    ),
+    uiJel1,
+    bsCollapse(bsCollapsePanel(id="advancedFilterCollapse",title="Advanced filters",
+      uiMaxArticles,
+      uiJournal,
+      uiDateRange,
+      uiWithTags,
+      uiWithoutTags        
+    )),
+    uiSortBy
+  )
+  return(ui)
 }
 
 uiJEL = function(jel) {
@@ -128,9 +217,9 @@ skCollapsePanel = function(title, ..., titleUI=NULL, id = NULL, value = NULL)
 }
 
 
-shiny.articles.html = function(dt, file="articles.html") {
-  restore.point("make.html")
-  d = dt
+shiny.articles.html = function(adt=app$adt, app=getApp()) {
+  restore.point("shiny.articles.html")
+  d = adt
   
   local.url = paste0("file:///",data.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
 
