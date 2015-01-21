@@ -11,7 +11,7 @@ oxf.issue.urls = function(journ="restud",vol, issue, update=FALSE, ji=get.journa
   
   html.root = ji$html_root
   url = paste0(html.root,"/",vol,"/",issue)
-  htmlFile = paste0(html.dir,"/",journ,"_vol_",vol,"_issue_",issue,".html")
+  htmlFile = paste0(issues_html.dir,"/",journ,"_vol_",vol,"_issue_",issue,".html")
   if ( (!update) & file.exists(htmlFile)) {
     txt = readLines(htmlFile)
   } else {

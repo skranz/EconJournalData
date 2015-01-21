@@ -1,6 +1,8 @@
 write.journal.vol.csv = function(li, vol, journal) {
   restore.point("write.journal.vol.csv")
   
+  if (length(li)==0) return()
+  
   dt = as.data.frame(do.call("rbind",li))
   for (col in colnames(dt)) {
     dt[,col] = unlist(dt[,col])

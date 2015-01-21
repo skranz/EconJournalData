@@ -20,7 +20,8 @@ examples.update.journals = function() {
 }
 
 update.journals = function(journals=names(jis),overwrite=FALSE,download.zip=FALSE, max.size=500) {
-  restore.point("update.journals")  
+  restore.point("update.journals") 
+  journ = journals[1]
   for (journ in journals) {
     message("scrap.journal.web.data...")
     try(scrap.journal.web.data(journ, overwrite=overwrite))
@@ -74,7 +75,8 @@ read.articles.jel.csv = function() {
 }
 
 
-write.complete.data = function() { 
+write.complete.data = function() {
+  restore.point("write.complete.data")
   files = list.files(dcsv.dir, full.names=TRUE)
   li = lapply(files, read.csv, stringsAsFactors=FALSE)
   dt = rbindlist(li)
@@ -171,6 +173,7 @@ scrap.journal.web.data = function(journ, overwrite=FALSE, verbose=TRUE) {
     vols = ji$first_vol:ji$cur.vol
   }
     
+  # vol = vols[2]
   for (vol in vols) {
     if (verbose)
       cat("parse.journal.volume(journ=",journ,", vol=",vol,")")
@@ -191,7 +194,7 @@ init.journal.scrapper = function() {
   base.dir = "D:/libraries/EconJournalData"
   base.data.dir = "D:/data/EconJournalData"
   
-  
+  issues_html.dir <<- paste0(base.data.dir,"/issues_html")  
   html.dir <<- paste0(base.data.dir,"/html")
   csv.dir <<- paste0(base.dir,"/csv")
   dcsv.dir <<- paste0(base.dir,"/detailed_csv")
@@ -265,15 +268,21 @@ parse.journal.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
   
   # Check if a manual function exists
   fun = paste0("parse.",ji$webtype,".volume")
-  if (exists(fun)) {
-    fun.parse.volume = get(fun)
-    fun.parse.volume(journ=journ, vol=vol, issues=issues, articles=articles)
-    return()
-  }
+  
+  if (!exists(fun))
+    fun = "parse.default.volume"
+  
+  do.call(fun, list(journ=journ, vol=vol, issues=issues, articles=articles))
+  
+}
+
+parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  ji = get.journal.info(journ)) {
+  restore.point("parse.default.volume")
+  
   
   fun.issue.urls = get(paste0(ji$webtype,".issue.urls"))
   fun.parse.article = get(paste0("parse.",ji$webtype,".article"))
-
+  
   
   issue = 1
   articleNum = 1

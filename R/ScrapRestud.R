@@ -11,7 +11,7 @@ restud.issue.urls = function(journ="restud",vol, issue, update=FALSE, ji=get.jou
   
   html.root = "http://restud.oxfordjournals.org/content"
   url = paste0(html.root,"/",vol,"/",issue)
-  htmlFile = paste0(html.dir,"/restud_vol_",vol,"_issue_",issue,".html")
+  htmlFile = paste0(issues_html.dir,"/restud_vol_",vol,"_issue_",issue,".html")
   if ( (!update) & file.exists(htmlFile)) {
     txt = readLines(htmlFile)
   } else {

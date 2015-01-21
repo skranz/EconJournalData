@@ -6,7 +6,33 @@
 # 3. Analyse data appendices and generate meta data 
 # 4. Generate html sites
 
+examples.make.artciles.html = function() {
+  setwd("D:/libraries/EconJournalData")
+  init.journal.scrapper()
 
+  df = read.complete.data()
+  
+  rows = is.true(df$data.size>0.01) | is.na(df$data.size)
+  d = df[rows,]
+  ord = order(-d$data.size)
+  d = d[ord,]
+  d$code.str = make.code.str(d)
+  
+  d = filter(d, year*100+month >= 201405)
+  
+  file="new_jel_articles.html"
+  make.JEL.html(d, file=file)
+  browseURL(paste0("file://", getwd(), "/",file))
+
+  file="new_articles.html"
+  make.long.html(d, file=file)
+  browseURL(paste0("file://", getwd(), "/",file))
+
+  file="fav_articles.html"
+  make.favorite.html(d, file=file)
+  browseURL(paste0("file://", getwd(), "/",file))
+  
+}
 
 make.articles.html = function() {
   setwd("D:/libraries/EconJournalData")

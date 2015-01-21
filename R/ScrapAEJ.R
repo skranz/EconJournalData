@@ -9,14 +9,14 @@ examples.parse.aej.volume = function() {
 
 
 aej.issue.urls = function(journ,vol, issue, update=FALSE, ji=get.journal.info(journ)) {
-  restore.point("parse.issue")
+  restore.point("aej.issue.urls")
   html.root = jis[[journ]]$html_root
   url = paste0(html.root,".",vol,".",issue)
-  htmlFile = paste0(html.dir,"/",journ,"_vol_",vol,"._issue_",issue,".html")
+  htmlFile = paste0(issues_html.dir,"/",journ,"_vol_",vol,"._issue_",issue,".html")
   if ( (!update) & file.exists(htmlFile)) {
     txt = readLines(htmlFile)
   } else {
-    txt = readLines(url)
+    txt = try(readLines(url), silent=TRUE)
     if (is(txt,"try-error")) {
       cat("\nDid not find ",journ," vol",vol, "issue",issue, " in the web.")
       return(NULL)
