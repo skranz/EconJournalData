@@ -15,10 +15,11 @@ restud.issue.urls = function(journ="restud",vol, issue, update=FALSE, ji=get.jou
   if ( (!update) & file.exists(htmlFile)) {
     txt = readLines(htmlFile)
   } else {
-    txt = "No issue found"
-    tryCatch(txt <- readLines(url),
-             error=function(e) {}
-    )
+    txt = try(readLines(url), silent=TRUE)
+    if (is(txt,"try-error")) {
+      cat("\nDid not find ",journ," vol",vol, "issue",issue, " in the web.")
+      return(NULL)
+    }
     writeLines(txt,htmlFile)    
   }
   

@@ -18,13 +18,13 @@ examples.make.artciles.html = function() {
   d = d[ord,]
   d$code.str = make.code.str(d)
   
-  d = filter(d, year*100+month >= 201405)
+  #d = filter(d, year*100+month >= 201405, journal != "aer")
   
-  file="new_jel_articles.html"
+  file="new_non_aer_jel_articles.html"
   make.JEL.html(d, file=file)
   browseURL(paste0("file://", getwd(), "/",file))
 
-  file="new_articles.html"
+  file="new_non_aer_articles.html"
   make.long.html(d, file=file)
   browseURL(paste0("file://", getwd(), "/",file))
 
@@ -32,7 +32,10 @@ examples.make.artciles.html = function() {
   make.favorite.html(d, file=file)
   browseURL(paste0("file://", getwd(), "/",file))
   
+  
 }
+
+display = cat
 
 make.articles.html = function() {
   setwd("D:/libraries/EconJournalData")
@@ -49,15 +52,19 @@ make.articles.html = function() {
   
   file="jel_articles.html"
   make.JEL.html(d, file=file)
-  browseURL(paste0("file://", getwd(), "/",file))
+  #browseURL(paste0("file://", getwd(), "/",file))
 
   file="all_articles.html"
   make.long.html(d, file=file)
-  browseURL(paste0("file://", getwd(), "/",file))
+  #browseURL(paste0("file://", getwd(), "/",file))
 
   file="fav_articles.html"
   make.favorite.html(d, file=file)
-  browseURL(paste0("file://", getwd(), "/",file))
+  #browseURL(paste0("file://", getwd(), "/",file))
+
+  dfav = get.favorite.articles(d)
+  file="jel_fav_articles.html"
+  make.JEL.html(dfav, file=file)
 
 }
 
@@ -183,7 +190,26 @@ make.long.html = function(dt, file="articles.html") {
   
 }
 
+get.favorite.articles = function(dt, file="favorite_articles.html",fav.file = "favorite articles.txt") {
+  restore.point("get.favorite.articles")
 
+  fav = str.trim(readLines(fav.file))
+  fav = fav[nchar(fav)>0]
+  header.rows = str.starts.with(fav,"#")
+  art.rows = !header.rows  
+  
+  art = fav[art.rows]
+  titles = str.left.of(art, " (")
+  titles[is.na(titles)] = art[is.na(titles)]
+  
+  rows = match(titles, dt$title)
+  if (any(is.na(rows))) {
+    display("The following titles in favorite articles could not be matched and are ignored: ")
+    print(art[which(is.na(rows))])  
+  }
+  d = dt[rows,]  
+  d
+}
 
 make.favorite.html = function(dt, file="favorite_articles.html",fav.file = "favorite articles.txt") {
   restore.point("make.html")

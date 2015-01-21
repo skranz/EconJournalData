@@ -11,13 +11,14 @@ examples.create.all.detailed.csv = function() {
   create.all.detailed.csv()  
 }
 
-create.all.detailed.csv = function() {
+create.all.detailed.csv = function(overwrite=FALSE) {
   files = list.files(csv.dir)
   dfiles = list.files(paste0(main.dir,"/detailed_csv"))
-  files = setdiff(files, dfiles)
+  if (!overwrite)
+    files = setdiff(files, dfiles)
   
   for (file in files) {
-    create.detailed.csv(csv.file=file)
+    try(create.detailed.csv(csv.file=file))
   }
   
 }
