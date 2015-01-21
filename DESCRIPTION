@@ -1,0 +1,9 @@
+Package: EconJournalData
+Type: Package
+Title: Collects meta data from economic articles with data appendices for reproducible research
+Version: 0.1
+Date: 2014-05-22
+Author: Sebastian Kranz
+Maintainer: Sebastian Kranz <sebastian.kranz@uni-ulm.de>
+Description: Collects meta data from economic articles with data appendices for reproducible research
+License: GPL >= 2.0
