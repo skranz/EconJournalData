@@ -64,7 +64,7 @@ make.articles.html = function() {
   make.favorite.html(d, file=file)
   #browseURL(paste0("file://", getwd(), "/",file))
 
-  dfav = get.favorite.articles(d)
+  dfav = parse.favorite.articles(d)
   file="jel_fav_articles.html"
   make.JEL.html(dfav, file=file)
 
@@ -192,7 +192,26 @@ make.long.html = function(dt, file="articles.html") {
   
 }
 
-get.favorite.articles = function(dt, file="favorite_articles.html",fav.file = "favorite articles.txt") {
+examples.write.favorite.articles = function() {
+  init.journal.scrapper()
+  write.favorite.articles()
+  dfav = read.favorite.articles()
+  dfav
+} 
+
+write.favorite.articles = function(dt = read.complete.data(),
+                                       fav.file = paste0(base.dir,"/favorite articles.txt"),
+                                       csv.file = paste0(base.dir,"/favorite articles.csv")) {
+  dfav = parse.favorite.articles(dt, fav.file)
+  write.csv(dfav,csv.file,row.names=FALSE)  
+}
+
+read.favorite.articles = function(csv.file = paste0(base.dir,"/favorite articles.csv")) {
+  read.csv(csv.file)  
+}
+
+
+parse.favorite.articles = function(dt, fav.file = paste0(base.dir,"/favorite articles.txt")) {
   restore.point("get.favorite.articles")
 
   fav = str.trim(readLines(fav.file))

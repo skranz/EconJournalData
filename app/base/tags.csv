@@ -1,0 +1,8 @@
+code, group, label
+"all_data", "data", "all data"
+"some_data", "data", "some data"
+"prop_data", "data", "prop. data"
+"plus_1", "like", "+1"
+"plus_5", "like", "+5"
+"plus_10", "like", "+10"
+"experiment", "other", "experiment"

@@ -181,36 +181,30 @@ scrap.journal.web.data = function(journ, overwrite=FALSE, verbose=TRUE) {
   }
 }
 
-init.journal.scrapper = function() {
-  library(restorepoint)
-  library(stringtools)
-  library(sktools)
-  library(yaml)
-  
-  code.dir = "D:/libraries/EconJournalData/EconJournalData/R"
-  files = list.files(code.dir, full.names=TRUE)
-  for (file in files) source(file)
-  
-  base.dir = "D:/libraries/EconJournalData"
-  base.data.dir = "D:/data/EconJournalData"
-  
-  issues_html.dir <<- paste0(base.data.dir,"/issues_html")  
-  html.dir <<- paste0(base.data.dir,"/html")
-  csv.dir <<- paste0(base.dir,"/csv")
-  dcsv.dir <<- paste0(base.dir,"/detailed_csv")
-  data.dir <<- paste0(base.data.dir,"/zipdata")
-  main.dir <<- base.dir
-  jis <<- yaml.load_file(paste0(base.dir,"/journal_info.yaml"))
-  
+init.journal.scrapper = function(
+      base.dir = "D:/libraries/EconJournalData",
+      base.data.dir = "D:/data/EconJournalData",
+      issues_html.dir = paste0(base.data.dir,"/issues_html"),  
+      html.dir = paste0(base.data.dir,"/html"),
+      csv.dir = paste0(base.dir,"/csv"),
+      dcsv.dir = paste0(base.dir,"/detailed_csv"),
+      data.dir = paste0(base.data.dir,"/zipdata"),
+      main.dir = base.dir,
+      jis = yaml.load_file(paste0(base.dir,"/journal_info.yaml"))
+    ) {
+
   jel <- read.csv(paste0(base.dir,"/jel_codes.csv"), stringsAsFactors=FALSE)
   jel$digits <- nchar(jel$code)
   jel$name = paste0(jel$code,": ", jel$label)
   rows = jel$digits==1
   jel$name[rows] = gsub(": General","",jel$name[rows],fixed=TRUE)
-  jel.codes <<- jel
+  jel.codes = jel
   
+  tags.csv = read.csv(paste0(base.dir,"/tags.csv"), stringsAsFactors=FALSE)
   
-  tags.csv <<- read.csv(paste0(base.dir,"/tags.csv"), stringsAsFactors=FALSE)
+  li = nlist(jel.codes, tags.csv, base.dir, base.data.dir, issues_html.dir, html.dir, csv.dir, dcsv.dir, data.dir, main.dir, jis)
+  
+  copy.into.env(source=li, dest=globalenv())
 
 }
 
