@@ -13,7 +13,7 @@ articlesApp = function() {
   library(shinyEvents)
   library(shinyBS)
   library(dplyrExtras)
-  library(shinyTree)
+
   
 
   jel = jel.codes
