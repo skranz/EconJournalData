@@ -102,26 +102,6 @@ create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".
   write.csv(dt,destfile)  
 }
 
-compute.article.year = function(vol,issue=NULL, ji) {
-  year = vol - ji$first_vol + ji$first_year
-  year
-}
-compute.article.month = function(vol,issue, ji) {
-  restore.point("compute.article.month")
-  if (length(ji$issue_month)==0) {
-    return(rep(NA,length(vol)))
-  }
-  month_vol = as.numeric(names(ji$issue_month))
-  ind = findInterval(vol, month_vol)
-  
-  month=rep(NA, length(vol))
-  
-  for (mv in seq_along(ji$issue_month)) {
-    im = unlist(ji$issue_month[[mv]])
-    month[ind==mv] = im[issue[ind==mv]]
-  }
-  month
-}
 
 
 examples.create.article.files.csv = function() {

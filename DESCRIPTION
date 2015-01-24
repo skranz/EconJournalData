@@ -7,4 +7,4 @@ Author: Sebastian Kranz
 Maintainer: Sebastian Kranz <sebastian.kranz@uni-ulm.de>
 Description: Collects meta data from economic articles with data appendices for reproducible research
 License: GPL >= 2.0
-Depends: dplyr, restorepoint, dplyrExtras, stringtools, sktools, yaml
+Depends: dplyr, restorepoint, dplyrExtras, stringtools, sktools, yaml, lubridate, tidyr

@@ -19,14 +19,16 @@ examples.update.journals = function() {
 
 }
 
-update.journals = function(journals=names(jis),overwrite=FALSE,download.zip=FALSE, max.size=500) {
+update.journals = function(journals=names(jis),overwrite=FALSE,download.zip=FALSE, max.size=500, years = year(Sys.time())) {
   restore.point("update.journals") 
   journ = journals[1]
   for (journ in journals) {
     message("scrap.journal.web.data...")
     try(scrap.journal.web.data(journ, overwrite=overwrite))
-    message("download.article.data.zip...")
-    try(ret <- apply.to.vol(vol=get.all.vol(journ),journ=journ, fun= download.article.data.zip, max.size=max.size))
+    if (download.zip) {
+      message("download.article.data.zip...")
+      try(ret <- apply.to.vol(vol=get.all.vol(journ),journ=journ, fun= download.article.data.zip, max.size=max.size))
+    }
     message("create.article.files.csv...")
     try(ret <- apply.to.vol(vol=get.all.vol(journ),journ=journ, fun= create.article.files.csv))
   
@@ -270,6 +272,11 @@ parse.journal.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
   
 }
 
+examples.parse.default.volume = function() {
+  init.journal.scrapper()
+  parse.default.volume(journ="aer", vol = 104, issues=9)
+}
+
 parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  ji = get.journal.info(journ)) {
   restore.point("parse.default.volume")
   
@@ -277,15 +284,17 @@ parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
   fun.issue.urls = get(paste0(ji$webtype,".issue.urls"))
   fun.parse.article = get(paste0("parse.",ji$webtype,".article"))
   
+  issue = issues[1]
   
-  issue = 1
+  #issue = 1
   articleNum = 1
   li = NULL
   
   counter = 1
   page.ind = 1
   ignore.issues = NULL
-   
+  
+  #articleNum = 10
   for (issue in setdiff(issues, ignore.issues)) {
     urls = fun.issue.urls(journ=journ,vol=vol,issue=issue)
     for (articleNum in intersect(seq_along(urls),articles)) {
@@ -299,7 +308,8 @@ parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
       }
     }
   }
-  dt = write.journal.vol.csv(li=li, journal=journ, vol=vol)
+  #dt = write.journal.vol.csv(li=li, journal=journ, vol=vol)
+  dt
 }
 
 

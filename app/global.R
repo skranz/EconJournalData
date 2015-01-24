@@ -1,7 +1,8 @@
 library(shinyEvents)
 library(shinyBS)
 library(EconJournalData)
-
+library(RCurl)
+library(XML)
 # setwd("D:/libraries/EconJournalData/EconJournalData/app")
 
 # set.restore.point.options(display.restore.point = TRUE)
