@@ -53,7 +53,7 @@ aej.extract.jel.from.html = function(d, txt=NULL) {
 
   s = NULL
   if (is.null(txt)) {
-    d$htmlFile = paste0(html.dir,"/",d$journal,"_vol_",d$vol,"._issue_",d$issue,".html")
+    d$htmlFile = paste0(html.dir,"/",d$journ,"_vol_",d$vol,"._issue_",d$issue,".html")
 
     d = download.scrap.html(d)
     txt = readLines(d$htmlFile)
@@ -133,7 +133,7 @@ examples.parse.aej.article = function() {
   init.journal.scrapper()
   
   d.ind = list(journal="aejmic",issue=2, vol=6, articleNum=8, url=NULL)    
-  html.root = jis[[d.ind$journal]]$html_root
+  html.root = jis[[d.ind$journ]]$html_root
   d.ind$url = "http://www.aeaweb.org/articles.php?doi=10.1257/mic.6.2.247"
   
   d = parse.aej.article(d.ind)
@@ -148,9 +148,9 @@ parse.aej.article = function(d) {
     stop("Non finite d$vol")
 
   
-  d$id =  paste0(d$journal,"_",d$vol,"_",d$issue,"_",d$articleNum)
+  d$id =  paste0(d$journ,"_",d$vol,"_",d$issue,"_",d$articleNum)
   
-  d$htmlFile = paste0(html.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".html")
+  d$htmlFile = paste0(html.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".html")
   d = download.scrap.html(d)
   txt = readLines(d$htmlFile)
 
@@ -230,4 +230,8 @@ parse.aej.article = function(d) {
   d$exists = TRUE
   d  
 }
+
+
+
+
 

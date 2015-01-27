@@ -50,7 +50,7 @@ articlesApp = function() {
   dfav = read.favorite.articles()
   app$adt = dfav
 
-  sort.fields = c("data.size","date","title", "journal")
+  sort.fields = c("data.size","date","title", "journ")
   sort.fields = c(sort.fields, paste0("desc(",sort.fields,")"))
   
   app$glob$dt = dt
@@ -88,7 +88,7 @@ show.btn.click = function(app,session,...) {
   
   opt = app$opt
   adt = app$glob$dt
-  fields = c("google", "max.articles","jel","journals","with.tags","without.tags","sort.by")
+  fields = c("google", "max.articles","jel","journals","with.tags","without.tags","sort.by", "start.date","end.date")
   for (f in fields) {
     opt[[f]] = getInputValue(f)
   }
@@ -96,9 +96,18 @@ show.btn.click = function(app,session,...) {
   restore.point("show.btn.click")
   
   if (!is.null(opt$journals)) {
-    adt = filter(adt, journal %in% opt$journals)
+    adt = filter(adt, journ %in% opt$journals)
   }
  
+  if (!is.null(opt$start.date)) {
+    adt = filter(adt, date >= opt$start.date)
+  }
+  
+  if (!is.null(opt$end.date)) {
+    adt = filter(adt, date <= opt$end.date)
+  }
+  
+  
   if (!is.null(opt$google)) {
     if(nchar(str.trim(opt$google))>0)
       adt = google.journals(opt$google, adt)
@@ -190,11 +199,10 @@ uiArticleSelectors = function(app=getApp()) {
   )
 
   uiJel = textInput("jel","JEL Codes:")
-      
-  uiDateRange = dateRangeInput("daterange", "Date range:",
-               start = "2000-01-01",
-               end   = NULL,
-               format= "mm/yyyy")
+   
+        
+  uiStartDate = dateInput("start.date","Date from:",value="2005-01-01",format= "mm/yyyy")
+  uiEndDate = dateInput("end.date","Date to:",value=as.Date(Sys.time()+1e6),format= "mm/yyyy")
 
   
   
@@ -219,15 +227,15 @@ uiArticleSelectors = function(app=getApp()) {
 
   ui = verticalLayout(
     fluidRow(
-      actionButton("showBtn","Search"),
-      actionButton("updateBtn","Update")
+      actionButton("showBtn","Search")
+      #actionButton("updateBtn","Update")
     ),
     uiGoogle,
     uiJel,
     bsCollapse(bsCollapsePanel(id="advancedFilterCollapse",title="Advanced Search",
       uiMaxArticles,
       uiJournal,
-      uiDateRange,
+      uiStartDate,uiEndDate,
       uiWithTags,
       uiWithoutTags        
     )),
@@ -285,7 +293,7 @@ skCollapsePanel = function(title, ..., titleUI=NULL, id = NULL, value = NULL)
 }
 
 shiny.articles.html.noedit = function(d=app$adt, app=getApp(), zip.link=isTRUE(app$glob$zip.link)) {
-  local.url = paste0(data.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
+  local.url = paste0(data.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
   
   if (zip.link) {
     data.url = ifelse(nchar(d$data.url)>0,
@@ -296,7 +304,7 @@ shiny.articles.html.noedit = function(d=app$adt, app=getApp(), zip.link=isTRUE(a
   }
   
   str = paste0('<p><a href="', d$url,'" target="_blank">',d$title,'</a>',
-    ' (', signif(d$data.size,4),' MB, ' , d$journal,', ', d$publication.dat,') <BR>', d$JEL,
+    ' (', signif(d$data.size,4),' MB, ' , d$journ,', ', d$publication.dat,') <BR>', d$JEL,
     '<BR> ', d$code.str, data.url,  
     '</p>') 
   str
@@ -310,7 +318,7 @@ shiny.articles.html = function(adt=app$adt, app=getApp()) {
   
   d = adt
   
-  local.url = paste0("file:///",data.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
+  local.url = paste0("file:///",data.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
 
   data.url = ifelse(nchar(d$data.url)>0,
     paste0('<a href="',local.url,'">  (downloaded zip) </a>'),
@@ -318,7 +326,7 @@ shiny.articles.html = function(adt=app$adt, app=getApp()) {
 
   txt = paste0(
     '<p><h5><a href="', d$url,'">',d$title,'</a>',
-    ' (', signif(d$data.size,4),' MB, ' , d$journal,', ', d$publication.dat,')</h5>',
+    ' (', signif(d$data.size,4),' MB, ' , d$journ,', ', d$publication.dat,')</h5>',
     '', d$code.str, data.url ,
     '<br>', articles.tag.checkboxes(d,tags.csv),
     '&nbsp;<input id="comment_',d$id,'" type="text" value=""/>', 

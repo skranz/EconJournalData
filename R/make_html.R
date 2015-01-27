@@ -18,7 +18,7 @@ examples.make.artciles.html = function() {
   d = d[ord,]
   d$code.str = make.code.str(d)
   
-  d = filter(d, year*100+month >= 201405, journal == "restud")
+  d = filter(d, year*100+month >= 201405, journ == "restud")
   
   file="new_restud_articles.html"
   make.long.html(d, file=file)
@@ -111,14 +111,14 @@ make.code.str = function(dt, ext=c("do","ado", "m","py","r","nb", "mod", "lng", 
 
 articles.html = function(d) {
   restore.point("articles.html")
-  local.url = paste0(data.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
+  local.url = paste0(data.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
   
   data.url = ifelse(nchar(d$data.url)>0,
     paste0('<a href="file://',local.url,'">  (downloaded zip) </a>'),
     "")
   
   str = paste0('<p><a href="', d$url,'">',d$title,'</a>',
-    ' (', signif(d$data.size,4),' MB, ' , d$journal,', ', d$publication.dat,') <BR>', d$JEL,
+    ' (', signif(d$data.size,4),' MB, ' , d$journ,', ', d$publication.dat,') <BR>', d$JEL,
     '<BR> ', d$code.str, data.url ,  
     '</p>') 
 } 

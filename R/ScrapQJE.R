@@ -22,7 +22,7 @@ parse.qje.volume = function(vol=81,issues = 1:7, articles=1:100) {
     urls = unique(urls)
     for (articleNum in intersect(seq_along(urls),articles)) {
       
-      d.ind = list(journal="qje",issue=issue, vol=vol, issue=issue, articleNum=articleNum, url=urls[articleNum])    
+      d.ind = list(journ="qje",issue=issue, vol=vol, issue=issue, articleNum=articleNum, url=urls[articleNum])    
       d = parse.qje.article(d.ind)
       cat(paste0("\nvol ", vol, " issue ", issue, " exists: ",d$exist,": ", d$url))
       
@@ -33,8 +33,10 @@ parse.qje.volume = function(vol=81,issues = 1:7, articles=1:100) {
       }
     }
   }
-  
-  dt = write.journal.vol.csv(li=li, journal="qje", vol=vol)
+  dt = parsed.articles.li.to.table(li)
+  if (write.csv)
+    write.journal.vol.csv(dt, journ=journ, vol=vol)
+  dt
 }
 
 

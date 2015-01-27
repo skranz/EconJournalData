@@ -11,24 +11,12 @@ examples.create.all.detailed.csv = function() {
   create.all.detailed.csv()  
 }
 
-create.all.detailed.csv = function(overwrite=FALSE) {
-  files = list.files(csv.dir)
-  dfiles = list.files(paste0(main.dir,"/detailed_csv"))
-  if (!overwrite)
-    files = setdiff(files, dfiles)
-  
-  for (file in files) {
-    try(create.detailed.csv(csv.file=file))
-  }
-  
-}
 examples.create.detailed.csv = function() {
   create.detailed.csv(vol=81,journ="restud")
   create.detailed.csv(csv.file = "restud_vol_81.csv")
 }
 
 create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".csv")) {
-  restore.point("create.detailed.csv")
   dt = read.csv(paste0(csv.dir,"/",csv.file))
 
   if (missing(journ)) {
@@ -40,7 +28,8 @@ create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".
     vol = as.numeric(str.right.of(str.left.of(str,".csv"),"_vol_"))
   }
     
-  
+  restore.point("create.detailed.csv")
+
   
   ext = c("do","ado","r","mod","nb","py","m", "sas","prg", "ztt","c","java","cpp","js","f95","dta","csv","xls","xlsx","txt","zip","mat","dat","sas7bdat","rdata","xml","7z","gz","tar","tsp","g","lng","gms")
 
@@ -62,7 +51,11 @@ create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".
   library(dplyr)
 
   # Add total size of files in zip
+  #browser()
+  dat = as.data.frame(dat)
   d = summarise(group_by(dat,id), zip.size = sum(total.size))
+  dt
+ 
   dt = merge(dt,d, by="id", all.x=TRUE)
    
   # Add total size of data files
@@ -72,19 +65,17 @@ create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".
 
   # Add total size of different file types
   d1 = dat[dat$file.type %in% ext,]
-  d = dcast.data.table(d1,id~file.type, value.var="total.size", fun.aggregate=sum)
+  d = dcast(d1,id~file.type, value.var="total.size", fun.aggregate=sum)
   d[is.na(d)] = 0
-  setnames(d,old=colnames(d)[-1], new=paste0("size.",colnames(d)[-1]))  
-  dt = merge(dt,d, by="id", all.x=TRUE)
+  colnames(d) = c(colnames(d)[1],paste0("size.",colnames(d)[-1]))
   
+  dt = merge(dt,d, by="id", all.x=TRUE)
+ 
   rows = is.na(dt$data.size) & !is.na(dt$zip.size)
   dt$data.size[rows] = dt$zip.size[rows]
   rows = is.na(dt$data.unit)
   dt$data.unit[rows] = "MB"
   
- 
-
-
   ji = get.journal.info(journ)
   year  = compute.article.year(dt$vol, dt$issue, ji)
   month = compute.article.month(dt$vol, dt$issue, ji)
@@ -115,13 +106,13 @@ examples.create.article.files.csv = function() {
 }
 
 # Look into the .zip file and generate a .csv with all filenames
-create.article.files.csv = function(d, zipfile = paste0(data.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")) {
+create.article.files.csv = function(d, zipfile = paste0(data.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")) {
   restore.point("create.article.files.csv")
   
   #"D:/data/EconJournalData/zipdata/aer_vol_105_issue_1_article_14.zip"
   #"D:/data/EconJournalData/zipdata/aer_vol_105_issue_1_article_14.zip"
   if (!file.exists(zipfile)) {
-    cat(paste0("\nData of ", d$journal, " ", d$vol,".",d$issue, " '", d$title, "'' was not yet downloaded."))
+    cat(paste0("\nData of ", d$journ, " ", d$vol,".",d$issue, " '", d$title, "'' was not yet downloaded."))
     return(NULL)
   }
   
@@ -184,7 +175,7 @@ download.article.data.zip = function(d, max.size = 5000, verbose=FALSE) {
   if (is.na(d$data.url) | nchar(str.trim(d$data.url))==0)
     return(NULL)
   
-  file = paste0(data.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
+  file = paste0(data.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
   if (!is.true(d$data.size< max.size) & is.finite(d$data.size)) {
     cat(paste0("\nData attachment of '", d$title, "'' is too large. Don't download."))
     return()
@@ -192,14 +183,14 @@ download.article.data.zip = function(d, max.size = 5000, verbose=FALSE) {
   
   if (file.exists(file)) {
     if (verbose) {
-      cat(paste0("\nData attachment of '", d$title, "'' was already downloaded."))
+      cat(paste0("\nData attachment of '", d$title, "'' was already downloaded into ", file))
     } else {
       cat("e")
     }
     return()
   }
   names(d)
-  cat(paste0("\nStart download of data attachment of '", d$title, "'...\n"))
+  cat(paste0("\nDownload data of ",d$journ,".",d$vol,".",d$issue,".",d$articleNum,": '", d$title, "' into ", file, "...\n"))
   download.file(url = as.character(d$data.url), 
               destfile=file, quiet = FALSE, mode = "wb",
               cacheOK = TRUE, extra = getOption("download.file.extra"))

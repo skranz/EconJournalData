@@ -57,7 +57,7 @@ examples.parse.oxf.article = function() {
 parse.oxf.article = function(d, ji=get.journal.info(d$journ)) {
   restore.point("parse.oxf.article")
   
-  d$htmlFile = paste0(html.dir,"/",d$journal,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".html")
+  d$htmlFile = paste0(html.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".html")
   d = download.scrap.html(d)
   txt = readLines(d$htmlFile)
   

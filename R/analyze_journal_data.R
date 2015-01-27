@@ -6,42 +6,6 @@
 # 3. Analyse data appendices and generate meta data 
 # 4. Generate html sites
 
-examples.update.journals = function() {
-  init.journal.scrapper()
-  journ= "restud"
-  journ = "aer"
-  max.size = 500
-  update.journals(journals=c("jep","aer","aejpol","aejmic", "aejmac","aejapp"))
-  update.journals(journals=c("aer"))
-  update.journals(journals=c("restud"))
-
-  update.journals(journals=c("qje"))
-
-}
-
-update.journals = function(journals=names(jis),overwrite=FALSE,download.zip=FALSE, max.size=500, years = year(Sys.time())) {
-  restore.point("update.journals") 
-  journ = journals[1]
-  for (journ in journals) {
-    message("scrap.journal.web.data...")
-    try(scrap.journal.web.data(journ, overwrite=overwrite))
-    if (download.zip) {
-      message("download.article.data.zip...")
-      try(ret <- apply.to.vol(vol=get.all.vol(journ),journ=journ, fun= download.article.data.zip, max.size=max.size))
-    }
-    message("create.article.files.csv...")
-    try(ret <- apply.to.vol(vol=get.all.vol(journ),journ=journ, fun= create.article.files.csv))
-  
-  }
-  message("create.all.detailed.csv...")
-  create.all.detailed.csv()
-  message("write.complete.data...")
-  write.complete.data()
-  message("write.articles.jel.csv...")
-  write.articles.jel.csv()
-}
-
-
 write.articles.jel.csv = function(dt = read.complete.data()) {
   head(dt$JEL1)  
   
@@ -88,7 +52,8 @@ write.complete.data = function() {
 }
 read.complete.data = function() {
   file = paste0(main.dir,"/complete_journal_data.csv")
-  read.csv(file, stringsAsFactors=FALSE)
+  as.data.frame(fread(file))
+  #read.csv(file, stringsAsFactors=FALSE)
 }
 
 get.journal.info = function(journ) {
@@ -191,10 +156,11 @@ init.journal.scrapper = function(
       csv.dir = paste0(base.dir,"/csv"),
       dcsv.dir = paste0(base.dir,"/detailed_csv"),
       data.dir = paste0(base.data.dir,"/zipdata"),
-      main.dir = base.dir,
-      jis = yaml.load_file(paste0(base.dir,"/journal_info.yaml"))
+      main.dir = base.dir
     ) {
 
+  
+  jis = load.jis(file = paste0(base.dir,"/journal_info.yaml"))
   jel <- read.csv(paste0(base.dir,"/jel_codes.csv"), stringsAsFactors=FALSE)
   jel$digits <- nchar(jel$code)
   jel$name = paste0(jel$code,": ", jel$label)
@@ -268,16 +234,19 @@ parse.journal.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
   if (!exists(fun))
     fun = "parse.default.volume"
   
-  do.call(fun, list(journ=journ, vol=vol, issues=issues, articles=articles))
-  
+  li = do.call(fun, list(journ=journ, vol=vol, issues=issues, articles=articles))
+  bind_rows(li)
 }
 
 examples.parse.default.volume = function() {
   init.journal.scrapper()
-  parse.default.volume(journ="aer", vol = 104, issues=9)
+  #parse.default.volume(journ="aer", vol = 104, issues=9)
+  
+  dt = parse.default.volume(journ="aer", vol = 104, issues=9, write.csv = FALSE)
+  
 }
 
-parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  ji = get.journal.info(journ)) {
+parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  ji = get.journal.info(journ), verbose=TRUE, write.csv = TRUE) {
   restore.point("parse.default.volume")
   
   
@@ -294,13 +263,16 @@ parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
   page.ind = 1
   ignore.issues = NULL
   
+  articleNum = 1
   #articleNum = 10
   for (issue in setdiff(issues, ignore.issues)) {
     urls = fun.issue.urls(journ=journ,vol=vol,issue=issue)
     for (articleNum in intersect(seq_along(urls),articles)) {
-      d.ind = list(journal=journ,issue=issue, vol=vol, issue=issue, articleNum=articleNum, url=urls[articleNum])    
+      d.ind = list(journ=journ,issue=issue, vol=vol, issue=issue, articleNum=articleNum, url=urls[articleNum])    
       d = fun.parse.article(d.ind)
-      cat(paste0("\nvol ", vol, " issue ", issue, " exists: ",d$exist,": ", d$url))   
+      if (verbose) {
+        cat(paste0("parse ", journ, ".", vol, ".", issue, ".",articleNum, ifelse(d$exist,": ","does not exist! : ")))
+      }
       if (d$exists) {
         li[[counter]] = d
         counter = counter+1
@@ -308,8 +280,55 @@ parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
       }
     }
   }
-  #dt = write.journal.vol.csv(li=li, journal=journ, vol=vol)
+  dt = parsed.articles.li.to.table(li)
+  if (write.csv)
+    write.journal.vol.csv(dt, journ=journ, vol=vol)
   dt
 }
 
+
+parsed.articles.li.to.table = function(li) {
+  restore.point("parsed.articles.li.to.table")
+  
+  if (length(li)==0) return()
+  
+  dt = as.data.frame(do.call("rbind",li))
+  for (col in colnames(dt)) {
+    dt[,col] = unlist(dt[,col])
+  }
+  dt = as.data.table(dt)
+  if (length(li)==0)
+    return(NULL)
+  
+  rows = which(nchar(dt$title)==0)
+  if (length(rows)>0)
+    dt$title[rows] = "Unknown Title"
+  dt$JEL = paste(dt$JEL1,dt$JEL2,dt$JEL3,dt$JEL4,dt$JEL5,dt$JEL6,dt$JEL7, sep=", ")
+  
+  dt$data.size = as.numeric(dt$data.size)
+  rows = which(dt$data.unit=="GB")
+  if (length(rows)>0) {
+    dt$data.size[rows] = dt$data.size[rows]*1000
+    dt$data.unit[rows] = "MB"
+  }
+  rows = which(dt$data.unit=="bytes")
+  if (length(rows)>0) {
+    dt$data.size[rows] = dt$data.size[rows] / (1000*1000)
+    dt$data.unit[rows] = "MB"
+  }
+  if (is.null(dt$keywords))
+    dt$keywords = ""
+
+  if (is.null(dt$publication.date))
+    dt$publication.date = NA
+
+  if (is.null(dt$has.data))
+    dt$has.data = dt$data.size > 0
+  
+  dt$id = paste0(dt$journ,"_",dt$vol,"_",dt$issue,"_",dt$articleNum)
+
+  library(dplyr)
+  dt = select(dt,id,journ,vol,issue,articleNum,title,has.data,url, article.url, data.url, htmlFile,publication.date,data.size,data.unit,keywords,JEL,JEL1,JEL2,JEL3,JEL4,JEL5,JEL6,JEL7)
+  dt
+}
 
