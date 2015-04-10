@@ -191,9 +191,11 @@ download.article.data.zip = function(d, max.size = 5000, verbose=FALSE) {
   }
   names(d)
   cat(paste0("\nDownload data of ",d$journ,".",d$vol,".",d$issue,".",d$articleNum,": '", d$title, "' into ", file, "...\n"))
-  download.file(url = as.character(d$data.url), 
+  try(
+    download.file(url = as.character(d$data.url), 
               destfile=file, quiet = FALSE, mode = "wb",
               cacheOK = TRUE, extra = getOption("download.file.extra"))
+  )
 
 } 
 

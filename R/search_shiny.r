@@ -5,11 +5,11 @@ examples.articlesApp = function() {
   
   set.restore.point.options(display.restore.point = TRUE)
   init.journal.scrapper()
-  app = articlesApp()
+  app = articlesApp(show.google=FALSE)
   runEventsApp(app)
 }
 
-articlesApp = function() {
+articlesApp = function(show.google=TRUE) {
   library(shinyEvents)
   library(shinyBS)
   library(dplyrExtras)
@@ -58,6 +58,7 @@ articlesApp = function() {
   app$glob$jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
   app$glob$sort.fields = sort.fields
   app$glob$jel.dt = as.data.frame(read.articles.jel.csv())
+  app$glob$show.google = show.google
   
   
   app$ui = shinyUI(navbarPage("Find Economic Articles with Data",
@@ -186,7 +187,11 @@ uiArticleSelectors = function(app=getApp()) {
 
   opt = app$opt
   
-  uiGoogle = textInput("google","Google", "")
+  if (app$glob$show.google) {
+    uiGoogle = textInput("google","Google", "")
+  } else {
+    uiGoogle = NULL
+  }
   
   uiSortBy = selectizeInput("sort.by","Sort by",app$glob$sort.fields, selected=opt$sort.by, multiple=TRUE)      
   uiMaxArticles = numericInput("max.articles","Max. shown Articles",value = opt$max.articles)
@@ -198,8 +203,8 @@ uiArticleSelectors = function(app=getApp()) {
     )
   )
 
-  uiJel = textInput("jel","JEL Codes:")
-   
+  uiJel = textInput("jel","Only following JEL Codes:")
+  uiJelLink = HTML('<a href="https://www.aeaweb.org/econlit/jelCodes.php?view=jel" target="blank_">List of JEL codes</a>') 
         
   uiStartDate = dateInput("start.date","Date from:",value="2005-01-01",format= "mm/yyyy")
   uiEndDate = dateInput("end.date","Date to:",value=as.Date(Sys.time()+1e6),format= "mm/yyyy")
@@ -231,7 +236,7 @@ uiArticleSelectors = function(app=getApp()) {
       #actionButton("updateBtn","Update")
     ),
     uiGoogle,
-    uiJel,
+    uiJel,uiJelLink,
     bsCollapse(bsCollapsePanel(id="advancedFilterCollapse",title="Advanced Search",
       uiMaxArticles,
       uiJournal,

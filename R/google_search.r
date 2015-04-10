@@ -80,8 +80,7 @@ google.restud = function(query,dt,start=NULL,start.date = "2005-01-01",num=100, 
 google.aej = function(query, dt,start = NULL, start.date = "2005-01-01",num=100) {
   restore.point("google.aej")
   
-  url = google.search.url(query,num=num, start.date=start.date, start=start,
-                          as_sitesearch="http://www.aeaweb.org/articles.php") 
+  url = google.search.url(query,num=num, start.date=start.date, start=start,as_sitesearch="http://www.aeaweb.org/articles.php") 
   url
   res = googleSearchXScraper(url)  
     
