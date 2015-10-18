@@ -140,6 +140,28 @@ jep:
       2: 4
       3: 7
       4: 10
-
+restat:
+  short: restat
+  webtype: restat
+  name: The Review of Economics and Statistics
+  first_vol: 94
+  first_year: 2012
+  max_issues: 5
+  html_root: "http://www.mitpressjournals.org/toc/rest/"
+  dataverse: TRUE
+  dataverse_root: "https://dataverse.harvard.edu/dataverse/restat"
+  issue_month:
+    94:
+      1: 2
+      2: 5
+      3: 8
+      4: 11
+    95:
+      1: 3
+      2: 5
+      3: 7
+      4: 10
+      5: 12
+      
 
 

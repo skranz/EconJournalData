@@ -35,7 +35,7 @@ init.ji = function(ji) {
   
   ji$vol.info = vol.info
   vol.info$issue = lapply(vol.info$num_issues, function(num) 1:num)
-  idt = unnest(vol.info, "issue")
+  idt = unnest(vol.info, issue)
   idt$month = compute.article.month(vol = idt$vol,issue = idt$issue,ji=ji)
   idt$date = as.Date(paste0(idt$year,"-",idt$month,"-01"))
   idt = filter(idt, date <= as.Date(Sys.time()))

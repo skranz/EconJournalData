@@ -33,7 +33,7 @@ create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".
   
   ext = c("do","ado","r","mod","nb","py","m", "sas","prg", "ztt","c","java","cpp","js","f95","dta","csv","xls","xlsx","txt","zip","mat","dat","sas7bdat","rdata","xml","7z","gz","tar","tsp","g","lng","gms")
 
-  data.ext = c("dta","csv","xls","xlsx","mat","dat","sas7bdat","rdata","xml","zip")
+  data.ext = c("dta","csv","xls","xlsx","mat","dat","sas7bdat","rdata","xml","zip","tab")
   
   li = lapply(1:NROW(dt),function(i) {
     cat(".")
