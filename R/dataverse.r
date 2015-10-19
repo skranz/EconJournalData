@@ -1,3 +1,16 @@
+examples.dataverse.html = function() {
+  name="restat"
+  dir="D:/libraries/EconJournalData/"
+  setwd(dir)
+  
+  detail.file = paste0("dv_",name,"_details.csv")
+  html.file = "dataverse_articles.html"
+  dat = read.csv(detail.file,stringsAsFactors = FALSE)
+  
+  dat=dat[order(-dat$data.size),]
+  dataverse.articles.html(dat, html.file)
+}
+
 update.dataverse = function(name="restat", dir="D:/libraries/EconJournalData/") {
   name="restat"
   dir="D:/libraries/EconJournalData/"
@@ -7,11 +20,16 @@ update.dataverse = function(name="restat", dir="D:/libraries/EconJournalData/") 
   file = paste0("dv_",name,".csv")
   detail.file = paste0("dv_",name,"_details.csv")
   
-  prev.df = read.csv(file,stringsAsFactors = FALSE)
-  tu = dataverse.title.and.url(dv = dv,prev.df = prev.df)
+  prev.df = NULL;
+  if (file.exists(file))
+    prev.df = read.csv(file,stringsAsFactors = FALSE)
+  tu = dataverse.csv(journ="restat",dv = dv,prev.df = prev.df)
   write.csv(tu,file, row.names=FALSE)
+
+  prev.dat = NULL;
+  if (file.exists(detail.file))
+    prev.dat = read.csv(detail.file,stringsAsFactors = FALSE)
   
-  prev.dat = read.csv(detail.file,stringsAsFactors = FALSE)
   dat = dataverse.detailed.csv(tu, prev.dat=prev.dat)
   write.csv(dat, detail.file, row.names = FALSE)
 }
@@ -21,24 +39,19 @@ examples.dataverse.title.and.url = function() {
   ji = jis[["restat"]]
   jis[["restat"]]$dataverse_root
 
-  df = restat.issue(journ="restat", vol=96, issue=1)
+  tu = dataverse.csv(journ="restat",page=40)
   
-  if (FALSE) {
-    dv = dataverse.title.and.url(ji$dataverse_root,max_page=100)
-    setwd("D:/libraries/EconJournalData/")
-    write.csv(dv,"dv_restat.csv",row.names = FALSE)
-  }
 }
 
 #devtools::install_github("ropensci/dvn")
-dataverse.title.and.url = function(dv = "https://dataverse.harvard.edu/dataverse/restat", page = NULL, max_page=100, prev.df=NULL) {
+dataverse.csv = function(journ="dataverse", dv = paste0("https://dataverse.harvard.edu/dataverse/", journ), page = NULL, max_page=100, prev.df=NULL) {
   
   if (is.null(page)) {
     page = 1
     li = list()
     while(page <= max_page) {
       cat("\npage ",page,"...")
-      df = dataverse.title.and.url(dv, page=page)
+      df = dataverse.csv(journ=journ, dv=dv, page=page)
       if (!is.null(prev.df)) {
         if (length(intersect(df$title, prev.df$title))>0)
           break
@@ -81,10 +94,13 @@ dataverse.title.and.url = function(dv = "https://dataverse.harvard.edu/dataverse
   title = str.right.of(title, 'Replication data and codes for ')
   title = str.trim(title)
 
-  urls = str.right.of(short.urls,"persistentId=doi:")
+  urls= short.urls
+  urls = str.right.of(urls,"persistentId=doi:")
+  urls = str.right.of(urls,"persistentId=hdl:")
+
   urls = paste0("http://dx.doi.org/", urls)
  
-  data_frame(title = title, data.url = urls)
+  data_frame(journ=journ,title = title, data.url = urls)
 }
 
 examples.dataverse.detailed.csv = function() {
@@ -124,8 +140,12 @@ dataverse.detailed.csv = function(tu, max_row = NROW(tu),  prev.dat=NULL) {
   })
   li = li[!sapply(li,is.null)]
   
-  as_data_frame(rbindlist(li))
+  dat = as_data_frame(rbindlist(li))
     
+  if (!is.null(prev.dat))
+    dat = rbind(prev.dat, dat)
+  
+  dat
   
 }
 
@@ -199,5 +219,22 @@ dataverse.detailed.entry = function(title,data.url, file.df) {
   dr = c(dr, as.list(all.sizes))  
   dr
 }
+
+dataverse.articles.html = function(d, file="dataverse_articles.html") {
+  restore.point("dataverse.articles.html")
+
+  code.str = make.code.str(d)
+  google.url = paste0("https://www.google.com/search?q=",d$title)
+  
+  str = paste0('<p><a href="', google.url,'" target="_blank">',d$title,'</a>',
+    ' (', signif(d$data.size,4),' MB, ' , d$journ,')',
+    '<a href="',d$data.url,  '" target="_blank"> (Files)</a>',
+    '<BR> ', code.str, 
+    '</p>') 
+  
+  if (!is.null(file))
+    writeLines(str, file)
+  str
+} 
 
 
