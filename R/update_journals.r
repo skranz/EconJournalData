@@ -3,6 +3,13 @@
 examples.update.journals = function() {
   init.journal.scrapper()
   
+  max.size = 200
+  update.journals(journals=c("jep","aer","aejpol","aejmic", "aejmac","aejapp","restud"), max.size=max.size, download.zip = !TRUE)
+  update.journals(journals=c("aer"), max.size = max.size,download.zip = TRUE)
+  update.journals(journals=c("restud"))
+  update.journals(journals=c("aer"))
+
+  
   mdt = find.missing.csv(journs=c("jep","aer","aejpol","aejmic", "aejmac","aejapp","restud"))
   update.missing.vols(mdt, max.num=Inf, download.zip = FALSE)
   
@@ -17,11 +24,6 @@ examples.update.journals = function() {
   
   journ= "restud"
   journ = "aer"
-  max.size = 500
-  update.journals(journals=c("jep","aer","aejpol","aejmic", "aejmac","aejapp","restud"))
-  update.journals(journals=c("aer"))
-  update.journals(journals=c("restud"))
-  update.journals(journals=c("qje"))
 }
 
 
@@ -89,11 +91,18 @@ find.missing.data = function(dt=read.complete.data(), dir=data.dir, journs=names
 
 
 find.missing.csv = function(dt=all.issues.data(journs), dir=csv.dir, missing.type="csv", journs=names(jis)) {
+  restore.point("find.missing.csv")
+  
   rnames = paste0(dt$journ, "_vol_",dt$vol,".csv") 
   enames = list.files(path = dir)
   missing = setdiff(rnames, enames)
   rows = match(missing, rnames)
-  cbind(dt[rows,],missing.type="csv")
+  
+  if (length(rows)>0) {
+    cbind(dt[rows,],missing.type="csv")
+  } else {
+    cbind(dt[rows,],missing.type="csv"[rows])
+  }
   
 }
 

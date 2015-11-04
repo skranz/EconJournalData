@@ -17,6 +17,8 @@ examples.create.detailed.csv = function() {
 }
 
 create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".csv")) {
+  restore.point("create.detailed.csv")
+  
   dt = read.csv(paste0(csv.dir,"/",csv.file))
 
   if (missing(journ)) {
@@ -28,7 +30,7 @@ create.detailed.csv = function(vol,journ, csv.file = paste0(journ,"_vol_",vol,".
     vol = as.numeric(str.right.of(str.left.of(str,".csv"),"_vol_"))
   }
     
-  restore.point("create.detailed.csv")
+  restore.point("create.detailed2.csv")
 
   
   ext = c("do","ado","r","mod","nb","py","m", "sas","prg", "ztt","c","java","cpp","js","f95","dta","csv","xls","xlsx","txt","zip","mat","dat","sas7bdat","rdata","xml","7z","gz","tar","tsp","g","lng","gms")

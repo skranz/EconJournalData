@@ -3,7 +3,7 @@ examples.scrapApp = function() {
   library(shinyBS)
   library(EconJournalData)
   
-  set.restore.point.options(display.restore.point = TRUE)
+  restore.point.options(display.restore.point = TRUE)
   init.journal.scrapper()
   app = scrapApp()
   runEventsApp(app)

@@ -140,7 +140,7 @@ scrap.journal.web.data = function(journ, overwrite=FALSE, verbose=TRUE) {
     vols = ji$first_vol:ji$cur.vol
   }
     
-  # vol = vols[2]
+  vol = vols[1]
   for (vol in vols) {
     if (verbose)
       cat("parse.journal.volume(journ=",journ,", vol=",vol,")")
@@ -266,7 +266,7 @@ parse.default.volume = function(journ, vol=103, issues = 1:12, articles=1:100,  
   articleNum = 1
   #articleNum = 10
   for (issue in setdiff(issues, ignore.issues)) {
-    urls = fun.issue.urls(journ=journ,vol=vol,issue=issue)
+    urls = fun.issue.urls(journ=journ,vol=vol,issue=issue, update=TRUE)
     for (articleNum in intersect(seq_along(urls),articles)) {
       d.ind = list(journ=journ,issue=issue, vol=vol, issue=issue, articleNum=articleNum, url=urls[articleNum])    
       d = fun.parse.article(d.ind)

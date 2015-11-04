@@ -4,11 +4,12 @@ examples.dataverse.html = function() {
   setwd(dir)
   
   detail.file = paste0("dv_",name,"_details.csv")
-  html.file = "dataverse_articles.html"
+  html.file = "restat_articles.html"
+  fav.file = paste0("favorite restat.txt")
   dat = read.csv(detail.file,stringsAsFactors = FALSE)
   
   dat=dat[order(-dat$data.size),]
-  dataverse.articles.html(dat, html.file)
+  dataverse.articles.html(dat, html.file, title="Articles from the Review of Economics and Statistics",fav.file = fav.file)
 }
 
 update.dataverse = function(name="restat", dir="D:/libraries/EconJournalData/") {
@@ -143,7 +144,7 @@ dataverse.detailed.csv = function(tu, max_row = NROW(tu),  prev.dat=NULL) {
   dat = as_data_frame(rbindlist(li))
     
   if (!is.null(prev.dat))
-    dat = rbind(prev.dat, dat)
+    dat = rbind(dat,prev.dat)
   
   dat
   
@@ -220,21 +221,38 @@ dataverse.detailed.entry = function(title,data.url, file.df) {
   dr
 }
 
-dataverse.articles.html = function(d, file="dataverse_articles.html") {
+dataverse.articles.html = function(d, html.file="dataverse_articles.html",title="Articles", fav.file = NULL) {
   restore.point("dataverse.articles.html")
 
+  
+  # Put favorites in front
+  if (!is.null(fav.file)) {
+    fav = str.trim(readLines(fav.file,warn = FALSE))
+    fav = fav[nchar(fav)>0]
+    rows = match(fav,d$title)
+    rows = rows[!is.na(rows)]
+    rem.rows = setdiff(1:NROW(d), rows)
+    d = d[c(rows, rem.rows),]
+    
+    
+  }
+  
   code.str = make.code.str(d)
   google.url = paste0("https://www.google.com/search?q=",d$title)
   
   str = paste0('<p><a href="', google.url,'" target="_blank">',d$title,'</a>',
-    ' (', signif(d$data.size,4),' MB, ' , d$journ,')',
+    ' (', signif(d$data.size,4),' MB' , d$journ,')',
     '<a href="',d$data.url,  '" target="_blank"> (Files)</a>',
     '<BR> ', code.str, 
     '</p>') 
   
-  if (!is.null(file))
-    writeLines(str, file)
-  str
+  str = paste0(str, collapse="\n")
+  if (!is.null(title))
+    str = paste0("<h2>",title,"</h2>",str)
+  
+  if (!is.null(html.file))
+    writeLines(str, html.file)
+  invisible(str)
 } 
 
 
