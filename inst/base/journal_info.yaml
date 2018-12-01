@@ -2,7 +2,9 @@ aer:
   short: aer
   webtype: aej
   name: American Economic Review
-  html_root: "https://www.aeaweb.org/articles.php?doi=10.1257/aer"
+  start_url: "https://www.aeaweb.org/journals/aer/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "https://www.aeaweb.org/journals/aer/issues"
   first_vol: 95
   first_year: 2005
   max_issues: 12
@@ -35,6 +37,92 @@ aer:
       11: 11
       12: 12
 
+aejmic:
+  short: aejmic
+  webtype: aej
+  name: AEJ Micro
+  first_vol: 1
+  first_year: 2009
+  max_issues: 4
+  start_url: "https://www.aeaweb.org/journals/mic/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/mic"
+  issue_month:
+    1:
+      1: 2
+      2: 5
+      3: 8
+      4: 11
+
+aejpol:
+  short: aejpol
+  webtype: aej
+  name: AEJ Policy
+  first_vol: 1
+  first_year: 2009
+  max_issues: 4
+  start_url: "https://www.aeaweb.org/journals/pol/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/pol"
+  issue_month:
+    1:
+      1: 2
+      2: 5
+      3: 8
+      4: 11
+
+aejapp:
+  short: aejapp
+  webtype: aej
+  name: AEJ Applied Economics
+  first_vol: 1
+  first_year: 2009
+  max_issues: 4
+  start_url: "https://www.aeaweb.org/journals/app/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "https://www.aeaweb.org/journals/app/issues"
+  issue_month:
+    1:
+      1: 1
+      2: 4
+      3: 7
+      4: 10
+
+aejmac:
+  short: aejmac
+  webtype: aej
+  name: AEJ Macroeconomics
+  first_vol: 1
+  first_year: 2009
+  max_issues: 4
+  start_url: "https://www.aeaweb.org/journals/mac/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/mac"
+  issue_month:
+    1:
+      1: 1
+      2: 4
+      3: 7
+      4: 10
+
+jep:
+  short: jep
+  webtype: aej
+  name: Journal of Economic Perspectives
+  first_vol: 24
+  first_year: 2010
+  max_issues: 4
+  start_url: "https://www.aeaweb.org/journals/jep/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/jep"
+  issue_month:
+    24:
+      1: 1
+      2: 4
+      3: 7
+      4: 10
+      
+
 qje:
   short: qje
   webtype: oxf
@@ -66,80 +154,6 @@ restud:
       3: 7
       4: 10
 
-aejmic:
-  short: aejmic
-  webtype: aej
-  name: AEJ Micro
-  first_vol: 1
-  first_year: 2009
-  max_issues: 4
-  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/mic"
-  issue_month:
-    1:
-      1: 2
-      2: 5
-      3: 8
-      4: 11
-
-aejpol:
-  short: aejpol
-  webtype: aej
-  name: AEJ Policy
-  first_vol: 1
-  first_year: 2009
-  max_issues: 4
-  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/pol"
-  issue_month:
-    1:
-      1: 2
-      2: 5
-      3: 8
-      4: 11
-
-aejapp:
-  short: aejapp
-  webtype: aej
-  name: AEJ Applied Economics
-  first_vol: 1
-  first_year: 2009
-  max_issues: 4
-  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/app"
-  issue_month:
-    1:
-      1: 1
-      2: 4
-      3: 7
-      4: 10
-
-aejmac:
-  short: aejmac
-  webtype: aej
-  name: AEJ Macroeconomics
-  first_vol: 1
-  first_year: 2009
-  max_issues: 4
-  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/mac"
-  issue_month:
-    1:
-      1: 1
-      2: 4
-      3: 7
-      4: 10
-
-jep:
-  short: jep
-  webtype: aej
-  name: Journal of Economic Perspectives
-  first_vol: 24
-  first_year: 2010
-  max_issues: 4
-  html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/jep"
-  issue_month:
-    24:
-      1: 1
-      2: 4
-      3: 7
-      4: 10
 restat:
   short: restat
   webtype: restat
@@ -162,6 +176,3 @@ restat:
       3: 7
       4: 10
       5: 12
-      
-
-

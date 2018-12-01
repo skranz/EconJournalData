@@ -1,0 +1,14 @@
+# dbmisc::dbCreateSQLiteFromSchema(system.file("schema/files.yaml", package="EconJournalData"),db.name = "files.sqlite",db.dir = "D:/libraries/EconJournalData")
+# dbmisc::dbCreateSQLiteFromSchema(update=FALSE,system.file("schema/files.yaml", package="EconJournalData"),db.name = "files.sqlite",db.dir = "D:/libraries/EconJournalData")
+
+files:
+  table:
+    id: CHARACTER(20)
+    journ: CHARACTER(6)
+    vol: INTEGER
+    file: TEXT
+    file_type: CHARACTER(10)
+    kb: NUMERIC
+    nested: BOOLEAN
+  indexes:
+    - "CREATE INDEX files1 on files (journ,vol,id)"

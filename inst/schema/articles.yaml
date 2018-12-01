@@ -1,0 +1,61 @@
+# library(dbmisc);dbCreateSQLiteFromSchema(update=TRUE, system.file("schema/articles.yaml", package="EconJournalData"),db.name = "articles.sqlite",db.dir = "D:/libraries/EconJournalData")
+
+
+article:
+  table:
+    id: CHARACTER(20)
+    year: INTEGER
+    date: DATE
+    journ: CHARACTER(6)
+    title: TEXT
+    vol: INTEGER
+    issue: INTEGER
+    artnum: INTEGER
+    article_url: TEXT
+    has_data: BOOLEAN
+    data_url: TEXT
+    size: NUMERIC
+    unit: CHARACTER(2)
+    files_txt: TEXT
+    downloaded_file: TEXT
+    num_authors: INTEGER
+    file_info_stored: BOOLEAN
+    file_info_summarized: BOOLEAN
+    abstract: TEXT
+  defaults:
+    file_info_stored: FALSE
+    file_info_summarized: FALSE
+    num_authors: NA
+  indexes:
+    - "CREATE UNIQUE INDEX article1 on article (id)"
+    - "CREATE INDEX article2 on article (journ, vol, issue, id)"
+
+author:
+  table:
+    id: CHARACTER(20)
+    author: CHARACTER(200)
+  indexes:
+    - "CREATE UNIQUE INDEX authors1 on author (id,author)"
+
+jel:
+  table:
+    id: CHARACTER(20)
+    jel: CHARACTER(3)
+    jel2: CHARACTER(2)
+    jel1: CHARACTER(1)
+    
+files_summary:
+  table:
+    id: CHARACTER(20)
+    file_type: VARCHAR(10)
+    num_files: INTEGER
+    mb: NUMERIC
+    is_code: BOOLEAN
+    is_data: BOOLEAN
+  sql:
+    - "CREATE UNIQUE INDEX files_summary1 on files_summary(id,file_type)"
+  index:
+    - file_type
+    - is_code, is_data
+    
+    

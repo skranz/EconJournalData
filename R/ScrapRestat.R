@@ -8,9 +8,9 @@ examples.parse.restat.volume = function() {
 }
 
 
-restat.issue = function(journ,vol, issue, update=FALSE, ji=get.journal.info(journ)) {
+restat.issue = function(journ,vol, issue, update=FALSE, ji=get.ji(journ)) {
   restore.point("restat.issue.urls")
-  html.root = jis[[journ]]$html_root
+  html.root = ji$html_root
   url = paste0(html.root,"/",vol,"/",issue)
   htmlFile = paste0(issues_html.dir,"/",journ,"_vol_",vol,"._issue_",issue,".html")
   if ( (!update) & file.exists(htmlFile)) {

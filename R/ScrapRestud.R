@@ -11,18 +11,12 @@ restud.issue.urls = function(journ="restud",vol, issue, update=FALSE, ji=get.jou
   
   html.root = "http://restud.oxfordjournals.org/content"
   url = paste0(html.root,"/",vol,"/",issue)
-  htmlFile = paste0(issues_html.dir,"/restud_vol_",vol,"_issue_",issue,".html")
-  if ( (!update) & file.exists(htmlFile)) {
-    txt = readLines(htmlFile)
-  } else {
-    txt = try(readLines(url), silent=TRUE)
-    if (is(txt,"try-error")) {
-      cat("\nDid not find ",journ," vol",vol, "issue",issue, " in the web.")
-      return(NULL)
-    }
-    writeLines(txt,htmlFile)    
+  txt = try(readLines(url), silent=TRUE)
+  if (is(txt,"try-error")) {
+    cat("\nDid not find ",journ," vol",vol, "issue",issue, " in the web.")
+    return(NULL)
   }
-  
+
   if (length(txt)<10) {
     return(NULL)
   }
@@ -48,12 +42,80 @@ examples.parse.restud.article = function() {
   url = urls[articleNum]
   d = nlist(vol,issue, url, articleNum)
   d.ind = d
-  
+
+    
   d = parse.restud.article(d.ind)
+
+  file = "D:/libraries/EconJournalData/scrap_html/Effects of Banning Advertising in Junk Food Markets _ The Review of Economic Studies _ Oxford Academic.html"
+  html = readLines(file, warn=FALSE)
+  parse.restud.article(html)
+}
+
+scrap.restud.issue = function(vol, issue, artnum=NULL) {
+  restore.point("scrap.restud.issue")
+  
+  journ="restud"
+  article_urls = restud.issue.urls(vol=vol, issue=issue)
+  if (length(article_urls)==0) {
+    cat(paste0("\nCould not find ReStud vol ", vol, " issue", issue))
+    return(NULL)
+  }
+  
+  artnums = seq_along(article_urls)
+  if (!is.null(artnum))
+    artnums = intersect(artnums, artnum)
+  for (cur.artnum in artnums) {
+    cat(".")
+    aurl = article_urls[[cur.artnum]]
+    ahtml = read_html(arl)
+    try({
+      art = scrap.restud.article.page(ahtml,artnum=cur.artnum, url=aurl, journ=journ, vol=vol, issue=issue)
+      if (!is.null(art))
+        insert.aea.article(art, db=db)
+    })
+  }
+}
+
+
+scrap.restud.article.page = function(html, url=NULL, vol=NULL, issue=NULL, artnum=NULL) {
+  restore.point("parse.restud.article")
+  journ = "restud"
+
+  title = html_node(html, ".article-title-main") %>% html_text(trim = TRUE)
+  authors = html_nodes(html, ".wi-authors a.linked-name") %>% html_text(trim=TRUE)
+
+  # Volume and Issue
+  str = (html_nodes(html, ".ww-citation-primary") %>% html_text(trim=TRUE))
+  if (is.null(vol))
+    vol = as.integer(str.between(str, "Volume ",","))
+  if (is.null(issue))
+    issue = as.integer(str.between(str, "Issue ",","))
+
+  abstract = html_node(html, "section.abstract") %>% html_text(trim=TRUE)
+
+  jel.str = html_nodes(html, ".article-metadata-taxonomies a") %>% html_text(trim=TRUE)
+  jel = trimws(str.left.of(jel.str,"-"))
+  
+  # Extract Dataset URL
+  data_url = html_node(html, ".dataSuppLink a") %>% html_attr("href")
+  has_data = is.na(data_url)
+  if (!has_data) {
+    data_url = ""
+  }
+  size=NA
+  unit=""
+
+  id = paste0(journ, "_", vol, "_", issue, "_", artnum)
+  
+  art = list(id=id, journ=journ, vol=as.integer(vol), issue=as.integer(issue), title=title, artnum = artnum, article_url = url, has_data = has_data, data_url = data_url,size=size, unit=unit, files_analyzed=FALSE, jel=jel, authors = authors, abstract=abstract, num_authors=length(authors))
+  art = add.article.date.info(art)
+  art
 
 }
 
-parse.restud.article = function(d) {
+
+
+parse.restud.article.old = function(d) {
   restore.point("parse.restud.article")
   
   d$htmlFile = paste0(html.dir,"/restud_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".html")

@@ -1,12 +1,59 @@
+
+init.journal.scrapper = function(
+    base.dir = getwd(),
+    pkg.base.dir = system.file("base", package = "EconJournalData"),
+    download.dir = file.path(base.dir,"downloads"),
+    temp.dir = file.path(base.dir, "temp")
+) {
+  restore.point("init.journal.scrapper")
+  
+  jis = load.jis(file = paste0(pkg.base.dir,"/journal_info.yaml"))
+  jel <- read.csv(paste0(pkg.base.dir,"/jel_codes.csv"), stringsAsFactors=FALSE)
+  jel$digits <- nchar(jel$code)
+  jel$name = paste0(jel$code,": ", jel$label)
+  rows = jel$digits==1
+  jel$name[rows] = gsub(": General","",jel$name[rows],fixed=TRUE)
+  jel.codes = jel
+  
+  tags.csv = read.csv(paste0(pkg.base.dir,"/tags.csv"), stringsAsFactors=FALSE)
+  
+  li = nlist(jel.codes, tags.csv, base.dir, download.dir, temp.dir, jis)
+  
+  file_types = readLines(paste0(pkg.base.dir,"/file_types.yaml"), warn=FALSE) %>% paste0(., collapse="\n") %>% yaml.load()
+  file_types[["all_ext"]] = unique(unlist(do.call(c,file_types)))
+  li$file_types = file_types
+  
+  setOption("ejd_options",li)
+  copy.into.env(source=li, dest=globalenv())
+  
+}
+
+get.ejd.opts = function() {
+  opts = getOption("ejd_options")
+  if (is.null(opts))
+    stop("Please call init.journal.scrapper() to initialize the package options.")
+  opts
+}
+ 
+get.jis = function(journ) {
+  get.ejd.opts()$jis    
+}
+
+
+get.ji = function(journ) {
+  get.ejd.opts()$jis[[journ]]    
+}
+
+
+
 examples.load.jis = function() {
   init.journal.scrapper()
   file = paste0(base.dir,"/journal_info.yaml")
 }
 
-
-
 load.jis = function(file = paste0(base.dir,"/journal_info.yaml")) {
-  jis = yaml.load_file(file)
+  yaml = paste0(readLines(file, warn=FALSE), collapse="\n")
+  jis = yaml.load(yaml)
   jis = lapply(jis, init.ji)
   jis
   
@@ -27,7 +74,7 @@ init.ji = function(ji) {
     for (i in seq_along(ivols)) {
       prev.vol = ivols[i]
       vol = c(ivols[-1],ji$max_vol)[i]
-      cat("i=",i, "prev.vol=", prev.vol, "vol=",vol)
+      #cat("i=",i, "prev.vol=", prev.vol, "vol=",vol)
       rows = (prev.vol:vol)-ji$first_vol+1
       vol.info[rows,"num_issues"] <- length(ji$issue_month[[i]])
     }
@@ -48,7 +95,7 @@ examples.vol.of.year = function() {
   vol.of.year(2015,"aer")
 }
 
-vol.of.year = function(year=year(Sys.time()), journ, ji=jis[[journ]]) {
+vol.of.year = function(year=year(Sys.time()), journ, ji=get.ji(journ)) {
   year - ji$first_year + ji$first_vol  
 }
 
@@ -74,7 +121,7 @@ compute.article.month = function(vol,issue, ji) {
   month
 }
 
-all.issues.data = function(journs = names(jis)) {
+all.issues.data = function(journs = names(jis), jis=get.jis()) {
   li = lapply(journs, function(journ) {
     jis[[journ]]$issue.dt
   })
@@ -82,7 +129,7 @@ all.issues.data = function(journs = names(jis)) {
   
 }
 
-find.missing.issues = function(journs = names(jis),dt = read.complete.data()) {
+find.missing.issues = function(journs = names(jis),dt = read.complete.data(), jis=get.jis()) {
   li = lapply(journs, function(journ) {
     issue.dt = jis[[journ]]$issue.dt
     missing = anti_join(issue.dt, dt, by=c("journ","year","vol","issue"))
@@ -130,3 +177,34 @@ scrap.info = function(dt=read.complete.data()) {
   
 }
 
+
+get.journal.info = function(journ) {
+  ji = get.ji(journ)
+  cur.year = year(Sys.time())
+  cur.vol = cur.year - ji$first_year + ji$first_vol
+  c(ji, nlist(cur.year, cur.vol))
+}
+
+get.all.vol = function(journ) {
+  ji = get.journal.info(journ)
+  ji$first_vol:ji$cur.vol
+}
+
+get.current.vol = function(journ) {
+  get.journal.info(journ)$cur.vol
+}
+
+get.all.journals = function(jis = get.ji) {
+  names(jis)
+}
+
+
+add.article.date.info = function(art, vol=art$vol, issue=art$issue, ji=jis[[art$journ]]) {
+  restore.point("add.article.date.info")
+  
+  art$year = compute.article.year(vol = vol, issue=issue, ji=ji)
+  month = compute.article.month(vol=vol, issue=issue, ji=ji)
+  art$date = as.Date(paste0(art$year,"-",month,"-01"))
+  art
+    
+}
