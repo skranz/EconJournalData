@@ -16,6 +16,12 @@ download.newest.articles.zips = function(max_articles=1, max_mb=5000, where = NU
   rs = prepare.nondowloaded.zip.article.query(max_mb, where, db)
   art.df = dbFetch(rs,max_articles)
   
+  rows = art.df$unit == "GB"
+  
+  art.df$size[rows] = art.df$size[rows] * 1000
+    
+  art.df = filter(art.df, size <= max_mb)
+  
   counter = 0
   while(counter < NROW(art.df)) {
     counter = counter+1

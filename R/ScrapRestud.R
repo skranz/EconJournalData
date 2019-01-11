@@ -1,4 +1,5 @@
 examples.restud.issues.urls = function() {
+  setwd("D:/libraries/EconJournalData/")
   init.journal.scrapper()
   vol = 81
   issue = 1

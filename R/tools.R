@@ -1,3 +1,5 @@
+
+
 is.empty = function(x) {
   if (is.null(x)) return(TRUE)
   if (length(x)==0) return(TRUE)
@@ -9,6 +11,7 @@ is.empty = function(x) {
   }
   return(FALSE)
 }
+
 
 
 

@@ -4,16 +4,20 @@ example.files.info.summarize = function() {
   db = get.articles.db()
   fdb = get.files.db()
   
-  fi = dbGet(fdb,"files")
-  res = summarize.files.info(fi)
-  res
-  store.files.summary(res)
-  update.files.summary()
+  ids = articles.with.unsummarized.files()
+  update.files.summary(ids)
+  
+  
+  
+  ids = c("aer_108_11_1","aer_108_11_2")
+  arts = dbGet(db,"article", list(id=ids), where.in=TRUE)
+  arts = dbGet(db,"article", list(id=ids[1]), where.in=!TRUE)
+
 }
 
-# Looks which files summaries have not yet been created
-# and create them
-update.files.summary = function(ids = articles.with.unsummarized.files(), chunk.size = 50) {
+#' Looks which files summaries have not yet been created
+#' and create them
+update.files.summary = function(ids = articles.with.unsummarized.files(max.art), chunk.size = 50, max.art = Inf) {
   restore.point("update.files.summary")
   db = get.articles.db()
   fdb = get.files.db()
@@ -22,18 +26,22 @@ update.files.summary = function(ids = articles.with.unsummarized.files(), chunk.
   
   chunk = id.li[[1]]
   for (chunk in id.li) {
-    fi = dbGet(fdb, "files", list(id=chunk))
-    #fi = dbGet(fdb,)
+    fi = dbGet(fdb, "files", list(id=chunk), where.in=TRUE)
+    fs = summarize.files.info(fi)
+    store.files.summary(fs)
   }
   
 }
 
-articles.with.unsummarized.files = function() {
+articles.with.unsummarized.files = function(max.art=Inf) {
   db = get.articles.db()
   fdb = get.files.db()
   files_ids = dbGet(fdb, sql="select distinct id from files", schema=NULL)$id
   sum_ids = dbGet(db, sql="select distinct id from files_summary", schema=NULL)$id
-  setdiff(files_ids, sum_ids) 
+  res = setdiff(files_ids, sum_ids)
+  if (length(res)>max.art)
+    res = res[seq_len(max.art)]
+  res
 }
 
 store.files.summary = function(fs, db = get.articles.db()) {

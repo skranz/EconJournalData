@@ -1,4 +1,23 @@
+examples.correct.data.url = function() {
+  setwd("D:/libraries/EconJournalData/")
+  init.journal.scrapper() 
+  db = get.articles.db()
+  df = dbGet(db,"article")
+  "https://www.aeaweb.orghttps://www.aeaweb.org/aej/mac/data/2011-0150_data.zip"
+  rows = which(str.starts.with(df$data_url,"https://www.aeaweb.orghttps://www.aeaweb.org"))
+  rhs = str.right.of(df$data_url[rows],"https://www.aeaweb.orghttps://www.aeaweb.org")
+  rhs.rows = which(!str.starts.with(rhs,"/"))
+  df$data_url[rows] = paste0("https://www.aeaweb.org",rhs)
+  
+  dbWithTransaction(db,{
+    dbDelete(db,"article", params=list())
+    dbInsert(db,"article", df)
+  })
+
+}
+
 examples.scrap.aea.journal = function() {
+  
   setwd("D:/libraries/EconJournalData/")
   init.journal.scrapper()
   journ="aer"
@@ -152,7 +171,16 @@ scrap.aea.article.page = function(html,artnum,url, journ="aer", base_url="", ign
   if (has_data) {
     links  = links[is_data][1]
     labels = labels[is_data][1]
-    data_url = paste0(base_url, links)
+    
+    # Relative or absolute link?
+    if (!str.start.with(links,"https://")) {
+      rows = !str.starts.with(links,"/")
+      links[rows] = paste0("/",links)
+      
+      data_url = paste0(base_url, links)
+    } else {
+      data_url = links
+    }
     size_str = str.between(labels,"(",")")
     
     unit = str.right.of(size_str," ")
