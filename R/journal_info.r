@@ -61,7 +61,12 @@ load.jis = function(file = paste0(base.dir,"/journal_info.yaml")) {
 
 init.ji = function(ji) {
   restore.point("init.ji")
+  #if (ji$short=="restud") 
+  #  restore.point("init.ji.restud")
   ji$max_year = year(Sys.time())
+  
+  if (is.null(ji$first_vol)) return(ji)
+  
   ji$max_vol = vol.of.year(ji$max_year, ji=ji)
   
   vols = ji$first_vol:ji$max_vol
@@ -129,53 +134,26 @@ all.issues.data = function(journs = names(jis), jis=get.jis()) {
   
 }
 
-find.missing.issues = function(journs = names(jis),dt = read.complete.data(), jis=get.jis()) {
+find.missing.issues = function(journs = names(jis), jis=get.jis(), db=get.articles.db()) {
+  
   li = lapply(journs, function(journ) {
-    issue.dt = jis[[journ]]$issue.dt
-    missing = anti_join(issue.dt, dt, by=c("journ","year","vol","issue"))
+    restore.point("find.missing.issues.inner")
+    idt = jis[[journ]]$issue.dt
+    edt = get.existing.issues(journ,db)
+    missing = anti_join(idt, edt, by=c("journ","vol","issue"))
     missing
   })
   arrange(bind_rows(li), desc(year), desc(journ), desc(issue))
 }
 
 
-
-scrap.info = function(dt=read.complete.data()) {
-  dt = as.data.frame(dt)
-  dt = arrange(dt, journ, vol, issue, articleNum)
-  j.dt = summarise(group_by(dt,journ),
-    num.art = NROW(id),
-    num.vol = NROW(unique(vol)),
-    first.vol = min(vol),
-    last.vol = max(vol),
-    first.year = min(year),
-    last.year = max(year),
-    missing.vol = gaps.string(vol),
-    art.has.data = sum(is.true(data.size>0)),
-    art.na.data = sum(is.na(data.size)),
-    has.data.share = round(art.has.data / num.art,3)*100
-  )
-  
-  jv.dt =  summarise(group_by(dt,journ,year,vol),
-    num.art = NROW(id),
-    num.issues = NROW(unique(issue)),
-    missing.issue = gaps.string(issue,start=1),
-    art.has.data = sum(is.true(data.size>0)),
-    art.na.data = sum(is.na(data.size)),
-    has.data.share = round(art.has.data / num.art,3)*100
-  )
-  
-  # Find missing articles  
-  d =  summarise(group_by(dt,journ,year,vol,issue),
-    num.art = NROW(id),
-    missing.art = gaps.list(articleNum,start=1)
-  )
-  missing.art = unnest(d,missing.art)
-
-  # Find missing issues
-  jis
-  
+get.existing.issues = function(journ=NULL, db=get.articles.db()) {
+  sql = "select distinct journ, vol, issue from article"
+  if (!is.null(journ))
+    sql = paste0(sql, ' WHERE journ="',journ,'"')
+  dbGet(db,sql=sql, schema=NULL)
 }
+
 
 
 get.journal.info = function(journ) {

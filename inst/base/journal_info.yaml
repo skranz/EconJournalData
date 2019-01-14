@@ -147,6 +147,7 @@ restud:
   first_year: 2010
   max_issues: 4
   html_root: "http://restud.oxfordjournals.org/content"
+  base_url: "https://academic.oup.com"
   issue_month:
     77:
       1: 1
@@ -176,3 +177,8 @@ restat:
       3: 7
       4: 10
       5: 12
+
+jaere:
+  short: jaere
+  webtype: jaere
+  name: Journal of the Association of Environmental and Resource Economists

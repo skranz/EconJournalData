@@ -32,12 +32,6 @@ examples.scrap.aea.journal = function() {
 
 read_html = xml2::read_html
 
-get.existing.issues = function(journ=NULL, db=get.articles.db()) {
-  sql = "select distinct journ, vol, issue from article"
-  if (!is.null(journ))
-    sql = paste0(sql, ' WHERE journ="',journ,'"')
-  dbGet(db,sql=sql, schema=NULL)
-}
 
 
 scrap.aea.journal = function(journ="aer", vol=NULL, issue=NULL, artnum=NULL, year=NULL, ji=if(length(journ)==1) get.ji(journ) else NULL, ignore.existing.issues=!(is.null(vol) & !is.null(issue)), first.vol = ji$first_vol) {
