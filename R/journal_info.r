@@ -105,6 +105,10 @@ vol.of.year = function(year=year(Sys.time()), journ, ji=get.ji(journ)) {
 }
 
 
+year.of.vol = function(vol, journ, ji=get.ji(journ)) {
+  ji$first_year + vol - ji$first_vol  
+}
+
 compute.article.year = function(vol,issue=NULL, ji) {
   year = vol - ji$first_vol + ji$first_year
   year

@@ -1,4 +1,7 @@
 
+read_html = xml2::read_html
+
+
 
 is.empty = function(x) {
   if (is.null(x)) return(TRUE)

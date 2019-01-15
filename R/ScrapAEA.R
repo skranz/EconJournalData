@@ -30,9 +30,6 @@ examples.scrap.aea.journal = function() {
   
 }
 
-read_html = xml2::read_html
-
-
 
 scrap.aea.journal = function(journ="aer", vol=NULL, issue=NULL, artnum=NULL, year=NULL, ji=if(length(journ)==1) get.ji(journ) else NULL, ignore.existing.issues=!(is.null(vol) & !is.null(issue)), first.vol = ji$first_vol) {
   

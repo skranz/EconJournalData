@@ -122,6 +122,25 @@ jep:
       3: 7
       4: 10
       
+jpe:
+  short: jpe
+  webtype: jpe
+  name: Journal of Political Economy
+  first_vol: 123
+  first_year: 2015
+  max_issues: 6
+  issues_url: "https://www.journals.uchicago.edu/loi/jpe"
+  #base_url: "https://www.aeaweb.org"
+  #html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/jep"
+  issue_month:
+    123:
+      1: 2
+      2: 4
+      3: 6
+      4: 8
+      5: 10
+      6: 12
+
 
 qje:
   short: qje
