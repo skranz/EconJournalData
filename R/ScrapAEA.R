@@ -167,7 +167,7 @@ scrap.aea.article.page = function(html,artnum,url, journ="aer", base_url="", ign
     labels = labels[is_data][1]
     
     # Relative or absolute link?
-    if (!str.start.with(links,"https://")) {
+    if (!str.starts.with(links,"https://")) {
       rows = !str.starts.with(links,"/")
       links[rows] = paste0("/",links)
       

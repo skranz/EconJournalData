@@ -20,7 +20,7 @@ download.newest.articles.zips = function(max_articles=1, max_mb=5000, where = NU
   
   art.df$size[rows] = art.df$size[rows] * 1000
     
-  art.df = filter(art.df, size <= max_mb)
+  art.df = filter(art.df, is.na(size) | size <= max_mb)
   
   counter = 0
   while(counter < NROW(art.df)) {
@@ -28,9 +28,9 @@ download.newest.articles.zips = function(max_articles=1, max_mb=5000, where = NU
     art = as.list(art.df[counter,])
     
     try({
-      art$downloaded_file=download.or.get.data.zip(art=art,...)
-      if (!is.null(file)) {
-        dat = extract.zip.files.info(art = art,...)
+      art$downloaded_file=download.or.get.data.zip(art=art)
+      if (!is.null(art$downloaded_file)) {
+        dat = extract.zip.files.info(art = art)
         store.article.files.info(dat,art)
       }
       if (counter < max_articles)
@@ -42,7 +42,7 @@ download.newest.articles.zips = function(max_articles=1, max_mb=5000, where = NU
 prepare.nondowloaded.zip.article.query = function(max_mb = 5000, where=list(), db=get.articles.db()) {
   restore.point("prepare.nondowloaded.zip.article.query")
   sql = "select * from article WHERE
-  has_data == 1 AND downloaded_file IS NULL
+  has_data == 1 AND file_info_stored IS NULL AND downloaded_file IS NULL
 AND (size < :max_mb OR size IS NULL)"
   if (length(where)>0) {
     sql = paste0(sql, paste0(" AND ", names(where), " = :",names(where), collapse=" ")) 
@@ -62,19 +62,37 @@ download.or.get.data.zip = function(art, update.db=TRUE,download.dir = opts$down
   restore.point("download.or.get.data.zip")
   
   if (!is.empty(art$downloaded_file)) {
-    file = file.path(download.dir, art$downloaded_file)
-    if (file.exists(file))
-      return(file)
+    files = sep.lines(art$downloaded_file)
+    files = file.path(download.dir, files)
+    if (all(file.exists(files)))
+      return(art$downloaded_file)
   }
   
-  file = paste0(art$journ,"_vol_",art$vol,"_issue_",art$issue,"_article_",art$artnum,".zip")  
+  urls = sep.lines(art$data_url)
+  is.zip = has.substr(tolower(urls),".zip")
+  urls = urls[is.zip]
+  if (length(urls)==0) {
+    cat("\nSupplementary data is not provided as a ZIP file. Skip")
+    return(NULL)
+  }
+  
+  if (length(urls)==1) {
+    files = paste0(art$id,".zip")
+  } else {
+    files = paste0(art$id,"__", seq_along(urls), ".zip")
+  }
+  #file = paste0(art$journ,"_vol_",art$vol,"_issue_",art$issue,"_article_",art$artnum,".zip")  
+  file = paste0(files, collapse="\n")
+  
   
   cat(paste0("Download '", art$title, "': ", ifelse(is.null(art$size),0,art$size)," ", art$unit,"..."))
-  res = try(
-    download.file(url = as.character(art$data_url), 
-              destfile=file.path(download.dir,file), quiet = FALSE, mode = "wb",
-              cacheOK = TRUE, extra = getOption("download.file.extra"))
-  )
+  res = try({
+    for (row in seq_along(urls)) {
+      download.file(url = urls[row], 
+                    destfile=file.path(download.dir,files[row]), quiet = FALSE, mode = "wb",
+                    cacheOK = TRUE, extra = getOption("download.file.extra"))
+    }
+  })
   if (is(res,"try-error")) {
     file = NULL
     cat("\n\t",as.character(res))
@@ -95,20 +113,24 @@ store.article.files.info = function(dat,art,fdb=get.files.db(), db=get.articles.
   dbUpdate(db,"article", list(file_info_stored=TRUE), list(id=art$id))
 }
 
-extract.zip.files.info = function(file=file.path(download.dir,art$downloaded_file),art,download.dir = opts$download.dir, temp.dir = opts$temp.dir, opts=get.ejd.opts(), recursive=TRUE, nested=FALSE, clear.temp.dir=FALSE, ignore.files.start = "__MACOSX/") {
+extract.zip.files.info = function(files=file.path(download.dir,sep.lines(art$downloaded_file)),art,download.dir = opts$download.dir, temp.dir = opts$temp.dir, opts=get.ejd.opts(), recursive=TRUE, nested=FALSE, clear.temp.dir=FALSE, ignore.files.start = "__MACOSX/") {
   restore.point("extract.zip.files.info")
 
-  if (!file.exists(file)) {
+  if (!all(file.exists(files))) {
     cat("\nZIP file does not exist")
     return(NULL)
   }
   
   fd = NULL
-  tryCatch({fd <- unzip(file, files = NULL, list = TRUE, exdir = ".", unzip = "internal")},
-           error= function(e) {message(e)})
+  tryCatch(error= function(e) {message(e)}, {
+    fd <- bind_rows(lapply(files, function(file) {
+      unzip(file, files = NULL, list = TRUE, exdir = ".", unzip = "internal")
+    }))
+  })
   if (is.null(fd))
     return(NULL)
   
+  fd = unique(fd)
   if (length(ignore.files.start)==1)
     fd = filter(fd, !str.starts.with(fd$Name, ignore.files.start))
   
@@ -143,7 +165,7 @@ extract.zip.files.info = function(file=file.path(download.dir,art$downloaded_fil
       zip.files = dat$file[dat$file_type=="zip"]
       unzip(file, files = zip.files, exdir = temp.dir)
       li = lapply(zip.files, function(zip.file) {
-        extract.zip.files.info(file = file.path(temp.dir,zip.file), art = art, temp.dir=temp.dir, opts=opts, nested=TRUE, clear.temp.dir=FALSE)        
+        extract.zip.files.info(files = file.path(temp.dir,zip.file), art = art, temp.dir=temp.dir, opts=opts, nested=TRUE, clear.temp.dir=FALSE)        
       })
       inner.df = bind_rows(li)
       dat = bind_rows(dat, inner.df)

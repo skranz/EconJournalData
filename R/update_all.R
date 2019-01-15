@@ -1,5 +1,6 @@
 examples.update.all = function() {
   setwd("D:/libraries/EconJournalData/")
+  setwd("~")
   init.journal.scrapper()
 
   # Scrap all journals
@@ -19,7 +20,10 @@ examples.update.all = function() {
   update.dataverse.journal("jaere")
 
   # Download article ZIPs
-  download.newest.articles.zips(max_articles=1, max_mb=1000, wait.between=0)
+  download.newest.articles.zips(max_articles=10, max_mb=1000, wait.between=5)
+  
+
+  download.newest.articles.zips(max_articles=100, where=list(journ="restud"), max_mb=1000, wait.between=5)
   
   # Summarize file infos
   ids = articles.with.unsummarized.files()
