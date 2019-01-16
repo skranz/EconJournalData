@@ -1,9 +1,10 @@
 examples.scrap.jpe = function() {
   
   setwd("D:/libraries/EconJournalData/")
+  setwd("~")
   init.journal.scrapper()
 
-  scrap.jpe(vol=126, issue=1)
+  scrap.jpe(vol=123, issue=4:6)
   
   scrap.jpe()
 }
@@ -56,7 +57,7 @@ scrap.jpe.issue = function(journ="restud", vol, issue, artnum=NULL) {
     art = scrap.jpe.article.page(artnum = row, url=urls[row], journ=journ, vol=vol, issue=issue)
     insert.jpe.article(art)
     # Wait to abvoid blocking
-    Sys.sleep(sample(60:300,1))
+    Sys.sleep(sample(10:120,1))
     cat(" ", art$title)
   }
 }

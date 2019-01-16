@@ -22,6 +22,13 @@ download.newest.articles.zips = function(max_articles=1, max_mb=5000, where = NU
     
   art.df = filter(art.df, is.na(size) | size <= max_mb)
   
+  # Shuffle around to have less systematic behavior
+  # to reduce probability to be blocked
+  if (NROW(art.df)>1) {
+    rows = sample.int(NROW(art.df))
+    art.df = art.df[rows,]
+  }
+  
   counter = 0
   while(counter < NROW(art.df)) {
     counter = counter+1
@@ -34,7 +41,7 @@ download.newest.articles.zips = function(max_articles=1, max_mb=5000, where = NU
         store.article.files.info(dat,art)
       }
       if (counter < max_articles)
-        Sys.sleep(wait.between)
+        Sys.sleep(sample(1:wait.between,1))
     })
   }
 }

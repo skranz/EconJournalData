@@ -23,7 +23,7 @@ examples.update.all = function() {
   download.newest.articles.zips(max_articles=10, max_mb=1000, wait.between=5)
   
 
-  download.newest.articles.zips(max_articles=100, where=list(journ="restud"), max_mb=1000, wait.between=5)
+  download.newest.articles.zips(max_articles=20, where=list(journ="jpe"),wait.between=180)
   
   # Summarize file infos
   ids = articles.with.unsummarized.files()
