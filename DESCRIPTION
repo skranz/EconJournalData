@@ -1,11 +1,12 @@
 Package: EconJournalData
 Type: Package
-Title: Collects meta data from economic articles with data appendices for reproducible research
+Title: Analyse meta data of economic articles with data appendices 
 Version: 0.1
-Date: 2014-05-22
+Date: 2019-02-15
 Author: Sebastian Kranz
 Maintainer: Sebastian Kranz <sebastian.kranz@uni-ulm.de>
-Description: Collects meta data from economic articles with data appendices for reproducible research
+Description: Analyse meta data of economic articles with data appendices
 License: GPL >= 2.0
-Depends: dplyr, restorepoint, dplyrExtras, stringtools,  yaml,
-  lubridate, tidyr, dbmisc, rvest, sktools, dataverse
+Depends: dplyr, restorepoint, dplyrExtras, stringtools,
+  lubridate, tidyr, dbmisc,  dataverse
+RoxygenNote: 6.0.1

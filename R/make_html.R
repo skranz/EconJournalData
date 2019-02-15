@@ -11,30 +11,36 @@ examples.make.articles.html = function() {
   init.journal.scrapper() 
   db = get.articles.db()
   art = dbGet(db,"article")
-  d = filter(art,date>="2014-12-01") %>%
+  d = art %>%
+    filter(has_data) %>%
+    filter(date>="2014-12-01") %>%
     arrange(desc(size))
-  simple_articles_html(d,"new_articles.html")
+  
+  simple_articles_html(d,"new_articles.html", need.data=TRUE)
  
   
   df = filter(art, has.substr(title,"In a Small Moment")) 
 }
 
-simple_articles_html = function(art,file,  fs = dbGet(db,"files_summary"), db=get.articles.db(), need.data=FALSE, add.jel=FALSE) {
+simple_articles_html = function(art,file,  fs = dbGet(db,"files_summary"), db=get.articles.db(), need.data=FALSE, add.jel=FALSE, readme.base.url = "") {
   restore.point("simple_articles_html")
   d = add_code_and_data_str(d, fs)
 
   if (need.data) {
-    d = filter(d,data_mb>0)
+    d = filter(d,data_mb>0 | archive_mb >0)
   }
+  readme = ifelse(!is.na(d$readme_file),
+    paste0(' (<a href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
+  
   str = paste0('<p><a href="', d$article_url,'">','<span class="title">',d$title,'</span>','</a>',
-    ' (', signif(d$size,2),' ', d$unit, ' ', d$journ,', ',format(d$date,"%Y %b"),') <BR>', d$data_code_str, 
+    ' (', signif(d$size,2),' ', d$unit, ' ', d$journ,', ',format(d$date,"%Y %b"),') <BR>', d$data_code_str, readme,
     '</p>') 
   
   writeLines(str, file)
   
 }
 
-add_code_and_data_str = function(art, fs) {
+add_code_and_data_str = function(art, fs, opts=get.ejd.opts()) {
   restore.point("add_code_and_data_str")
   
   fs = filter(fs, id %in% art$id)
@@ -43,11 +49,15 @@ add_code_and_data_str = function(art, fs) {
   # Code string
   s = fs %>% group_by(id) %>%
     summarize(
+      archive_mb = sum(mb[fs$file_type %in% opts$file_types$archive_ext]),
       num_data = sum(is_data),
       data_mb = sum(mb[is_data]),
       num_code = sum(is_code),
       code_str = paste0(file_type[is_code]," ",signif(mb[is_code]*1000,3), " KB", collapse=", ")) %>%
+    mutate(archive_mb = ifelse(is.na(archive_mb),0,archive_mb)) %>%
     ungroup()
+  
+  
   
   s$code_str[s$num_code==0] = "no code files"
   
@@ -55,9 +65,10 @@ add_code_and_data_str = function(art, fs) {
       paste0(signif(s$data_mb/1000,3), " GB"),
       paste0(signif(s$data_mb,3), " MB")
     )
-  s$data_code_str = paste0("Data: ", s$data_str, ", Code: ", s$code_str)
+  s$archive_str = ifelse(s$archive_mb > 0,paste0("Compressed ", signif(s$archive_mb,3)," MB "),"")
+  s$data_code_str = paste0(s$archive_str, "Data: ", s$data_str, ", Code: ", s$code_str)
   
-  art = left_join(art, s[,c("id","data_code_str","data_mb")], by="id")
+  art = left_join(art, s[,c("id","data_code_str","data_mb","archive_mb")], by="id")
   art
 }
 

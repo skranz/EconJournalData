@@ -22,6 +22,7 @@ article:
     file_info_stored: BOOLEAN
     file_info_summarized: BOOLEAN
     abstract: TEXT
+    readme_file: TEXT
   defaults:
     file_info_stored: FALSE
     file_info_summarized: FALSE

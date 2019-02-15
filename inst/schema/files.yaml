@@ -4,11 +4,9 @@
 files:
   table:
     id: CHARACTER(20)
-    journ: CHARACTER(6)
-    vol: INTEGER
     file: TEXT
     file_type: CHARACTER(10)
     kb: NUMERIC
     nested: BOOLEAN
   indexes:
-    - "CREATE INDEX files1 on files (journ,vol,id)"
+    - "CREATE INDEX files1 on files (id)"
