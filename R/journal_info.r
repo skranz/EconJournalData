@@ -1,11 +1,11 @@
 
-init.journal.scrapper = function(
+init.ejd = function(
     base.dir = getwd(),
     pkg.base.dir = system.file("base", package = "EconJournalData"),
     download.dir = file.path(base.dir,"downloads"),
     temp.dir = file.path(base.dir, "temp")
 ) {
-  restore.point("init.journal.scrapper")
+  restore.point("init.ejd")
   
   jis = load.jis(file = paste0(pkg.base.dir,"/journal_info.yaml"))
   jel <- read.csv(paste0(pkg.base.dir,"/jel_codes.csv"), stringsAsFactors=FALSE)
@@ -23,7 +23,7 @@ init.journal.scrapper = function(
   file_types[["all_ext"]] = unique(unlist(do.call(c,file_types)))
   li$file_types = file_types
   
-  setOption("ejd_options",li)
+  options("ejd_options"=li)
   copy.into.env(source=li, dest=globalenv())
   
 }

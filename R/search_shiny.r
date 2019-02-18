@@ -1,78 +1,79 @@
 examples.articlesApp = function() {
-  library(shinyEvents)
-  library(shinyBS)
   library(EconJournalData)
-  
-  set.restore.point.options(display.restore.point = TRUE)
-  init.journal.scrapper()
+  setwd("D:/libraries/EconJournalData/")
+  restore.point.options(display.restore.point = TRUE)
+  init.ejd()
+  opts=get.ejd.opts()
+  db=get.articles.db()
   app = articlesApp(show.google=FALSE)
-  runEventsApp(app)
+  viewApp(app)
 }
 
-articlesApp = function(show.google=TRUE) {
+articlesApp = function(show.google=TRUE, opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS") {
+  restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
   library(dplyrExtras)
-
   
-
-  jel = jel.codes
-  jel$digit1  = substring(jel$code,1,1)
-  jel$digit12 = substring(jel$code,1,2)
-  jel$digit2 = substring(jel$code,2,2)
+  jis = opts$jis
   
   
-  
+#  jel = opts$jel.codes
+#  jel$digit1  = substring(jel$code,1,1)
+#  jel$digit12 = substring(jel$code,1,2)
+#  jel$digit2 = substring(jel$code,2,2)
   
   app = eventsApp()
   
-  dt = as.data.frame(read.complete.data())
-  dt$code.str = make.code.str(dt)
-  dt = dt[order(-dt$data.size, dt$has.data),]
+  articles = dbGet(db,"article") %>%
+    filter(has_data)
+  
+  dat = articles %>%
+    add_code_and_data_str(file = summary.file, overwrite=FALSE)
+  dat = dat[order(-dat$data_mb),]
+  dat$search_contents = tolower(paste0(dat$title," ",dat$abstract))
+
   
   app$opt = list(
-    max.articles = 200,
+    max_articles = 200,
+    ignore_without_data = TRUE,
     journals = names(jis),
-    start.date = min(dt$date,na.rm=TRUE),
-    end.date = max(dt$date,na.rm=TRUE),
-    with.tags = NULL,
-    without.tags = NULL,
-    sort.by = c("desc(data.size)"),
+    start_date = min(dat$date,na.rm=TRUE),
+    end_date = max(dat$date,na.rm=TRUE),
+    sort_by = c("desc(year)"),
+    #sort_by = c("desc(data_mb)"),
     edit = FALSE
   )
   
-  #rows = is.na(adt$data.size) | adt$data.size >0
-  #adt = adt[rows,]
-  #adt = as.data.frame(dt)
-  #if (NROW(adt)>app$opt$max.articles)
-  #  adt = adt[1:app$opt$max.articles,]
+  sort_fields = c("data_mb","date","title", "journ")
+  sort_fields = c(sort_fields, paste0("desc(",sort_fields,")"))
   
-  dfav = read.favorite.articles()
-  app$adt = dfav
+#  art_jel = dbGet(db,"jel")
+  
+  app$adf = arrange(dat, desc(date)) %>%
+    filter(is.na(data_mb) | data_mb>0 | archive_mb >0) %>%
+    slice(1:200)
+  
+  app$glob$dat = dat
+#  app$glob$jel = jel
+#  app$glob$jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
+  app$glob$sort_fields = sort_fields
+#  app$glob$art_jel = art_jel
 
-  sort.fields = c("data.size","date","title", "journ")
-  sort.fields = c(sort.fields, paste0("desc(",sort.fields,")"))
   
-  app$glob$dt = dt
-  app$glob$jel = as.data.frame(jel)
-  app$glob$jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
-  app$glob$sort.fields = sort.fields
-  app$glob$jel.dt = as.data.frame(read.articles.jel.csv())
-  app$glob$show.google = show.google
-  
-  
-  app$ui = shinyUI(navbarPage("Find Economic Articles with Data",
-    tabPanel("Articles", sidebarLayout(
+  app$ui = fluidPage(
+    #titlePanel("Find Economic Articles with Data",
+    sidebarLayout(
       sidebarPanel(
         uiArticleSelectors()
       ),
       mainPanel(
         uiOutput("articlesHtml") 
       )
-    ))
-  ))
-  html = paste0(shiny.articles.html(app$adt), collapse="\n")
-  html = paste0("<h4>",NROW(app$adt), " selected articles of ",NROW(app$glob$dt)," </h4>",html)
+    )
+  )
+  html = paste0(shiny.articles.html(app$adf), collapse="\n")
+  html = paste0("<h4>",NROW(app$adf), " selected articles of ",NROW(app$glob$dat)," </h4>",html)
   setUI("articlesHtml",HTML(html))
   buttonHandler("showBtn",show.btn.click)
   app
@@ -80,16 +81,14 @@ articlesApp = function(show.google=TRUE) {
 
 
 show.btn.click = function(app,session,...) {
-  
+
   progress <- shiny::Progress$new(session, min=0, max=100)
   on.exit(progress$close())
 
   progress$set(message = 'Searching may take a while...')
-
-  
   opt = app$opt
-  adt = app$glob$dt
-  fields = c("google", "max.articles","jel","journals","with.tags","without.tags","sort.by", "start.date","end.date")
+  adf = app$glob$dat
+  fields = c("keywords", "ignore_without_data", "max_articles","journals","with_tags","without_tags","sort_by", "start_date","end_date")
   for (f in fields) {
     opt[[f]] = getInputValue(f)
   }
@@ -97,104 +96,64 @@ show.btn.click = function(app,session,...) {
   restore.point("show.btn.click")
   
   if (!is.null(opt$journals)) {
-    adt = filter(adt, journ %in% opt$journals)
+    adf = filter(adf, journ %in% opt$journals)
   }
  
-  if (!is.null(opt$start.date)) {
-    adt = filter(adt, date >= opt$start.date)
+  if (isTRUE(opt$ignore_without_data)) {
+    adf = filter(adf,is.na(data_mb) | data_mb>0 | archive_mb >0)
   }
   
-  if (!is.null(opt$end.date)) {
-    adt = filter(adt, date <= opt$end.date)
+  if (!is.null(opt$start_date)) {
+    adf = filter(adf, date >= opt$start_date)
   }
   
+  if (!is.null(opt$end_date)) {
+    adf = filter(adf, date <= opt$end_date)
+  }
   
-  if (!is.null(opt$google)) {
-    if(nchar(str.trim(opt$google))>0)
-      adt = google.journals(opt$google, adt)
+  if (!is.null(opt$keywords)) {
+    if(nchar(str.trim(opt$keywords))>0)
+      adf = abstracts.keyword.search(opt$keywords, adf, adf$search_content)
   }
 
-  combine = "and"
-  if (!is.null(opt$jel)) {
-    if(nchar(str.trim(opt$jel))>0) {
-      jel = str.trim(opt$jel)
-      jel = gsub(" ",",",jel,fixed=TRUE)
-      jel = strsplit(jel,split = ",",fixed=TRUE)[[1]]
-      jel.dt = app$glob$jel.dt
-      id = adt$id
-      for (j in jel) {
-        new.id = unique(jel.dt$id[substring(jel.dt$jel,1,nchar(j))==j])
-        id = intersect(id, new.id)
-      }
-      adt = adt[adt$id %in% id,]  
-    }
-  }
+  # combine = "and"
+  # if (!is.null(opt$jel)) {
+  #   if(nchar(str.trim(opt$jel))>0) {
+  #     jel = str.trim(opt$jel)
+  #     jel = gsub(" ",",",jel,fixed=TRUE)
+  #     jel = strsplit(jel,split = ",",fixed=TRUE)[[1]]
+  #     jel.dt = app$glob$jel.dt
+  #     id = adf$id
+  #     for (j in jel) {
+  #       new.id = unique(jel.dt$id[substring(jel.dt$jel,1,nchar(j))==j])
+  #       id = intersect(id, new.id)
+  #     }
+  #     adf = adf[adf$id %in% id,]  
+  #   }
+  # }
 
-  if (length(opt$sort.by)>0) 
-    adt = s_arrange(adt, opt$sort.by)
-  app$adt = adt
+  if (length(opt$sort_by)>0) 
+    adf = s_arrange(adf, opt$sort_by)
+  app$adf = adf
 
   
 
-  html = paste0(shiny.articles.html(app$adt, app=app), collapse="\n")
-  html = paste0("<h4> Found ",NROW(app$adt), " articles (from ",NROW(app$glob$dt),") </h4>",html)
-
+  html = paste0(shiny.articles.html(app$adf, app=app), collapse="\n")
+  html = paste0("<h4> Found ",NROW(app$adf), " articles (from ",NROW(app$glob$dat),") </h4>",html)
 
   setUI("articlesHtml",HTML(html))
 }
-
-get.selected.jel.or = function(jel1=app$opt$jel1, jel2=app$opt$jel2, jel3=app$opt$jel3, jel=app$glob$jel, app=getApp()) {
-  restore.point("get.selected.jel")
-  
-  if (!is.null(jel1)) {
-    jel = filter(jel,digit1 %in% jel1)
-  }
-  if (!is.null(jel2)) {
-    d1 = substring(opt$jel2,1,1)
-    free.jel1 = setdiff(opt$jel1,d1)
-    jel = filter(jel,digit12 %in% opt$jel2 | digit1 %in% free.jel1)
-  }
-  if (!is.null(jel3)) {
-    jel = filter(jel,code %in% jel3)
-  }
-  jel
-}
-
-filter.articles = function(adt,ajel.dt,journals=NULL,jel1=NULL,...) {
-  restore.point("filter.articles")
-  dt = as.data.table(adt)
-  changed=FALSE
-  if (!is.null(jel1)) {
-    library(dplyr)
-    id = unique(ajel.dt[jel1]$id)
-    setkey(dt,id)
-    dt = dt[id]
-    changed=TRUE
-  }
-  if (changed) {
-    ord = order(-dt$data.size)
-    dt = dt[ord,]
-  }
-  dt
-}
-
 
 uiArticleSelectors = function(app=getApp()) {
   restore.point("uiArticleSelectors")
   cat("uiArticleSelectors")
 
-  jel.codes = app$glob$jel.codes
+  #jel.codes = app$glob$jel.codes
 
   opt = app$opt
   
-  if (app$glob$show.google) {
-    uiGoogle = textInput("google","Google", "")
-  } else {
-    uiGoogle = NULL
-  }
-  
-  uiSortBy = selectizeInput("sort.by","Sort by",app$glob$sort.fields, selected=opt$sort.by, multiple=TRUE)      
-  uiMaxArticles = numericInput("max.articles","Max. shown Articles",value = opt$max.articles)
+  uiSortBy = selectizeInput("sort_by","Sort by",app$glob$sort_fields, selected=opt$sort_by, multiple=TRUE)      
+  uiMaxArticles = numericInput("max_articles","Max. shown Articles",value = opt$max_articles)
   
   li = as.list(opt$journals); names(li) = opt$journals
   uiJournal = selectizeInput("journals", "Journals:",li,selected=li, multiple=TRUE,
@@ -203,21 +162,14 @@ uiArticleSelectors = function(app=getApp()) {
     )
   )
 
-  uiJel = textInput("jel","Only following JEL Codes:")
-  uiJelLink = HTML('<a href="https://www.aeaweb.org/econlit/jelCodes.php?view=jel" target="blank_">List of JEL codes</a>') 
+  #uiJel = textInput("jel","Only following JEL Codes:")
+  #uiJelLink = HTML('<a href="https://www.aeaweb.org/econlit/jelCodes.php?view=jel" target="blank_">List of JEL codes</a>') 
         
-  uiStartDate = dateInput("start.date","Date from:",value="2005-01-01",format= "mm/yyyy")
-  uiEndDate = dateInput("end.date","Date to:",value=as.Date(Sys.time()+1e6),format= "mm/yyyy")
+  uiStartDate = dateInput("start_date","Date from:",value="2005-01-01",format= "mm/yyyy")
+  uiEndDate = dateInput("end_date","Date to:",value=as.Date(Sys.time()+1e6),format= "mm/yyyy")
 
+  uiIgnoreWithoutData = checkboxInput("ignore_without_data","Only articles with data",value = TRUE)
   
-  
-  tags = read.csv(paste0(main.dir,"/tags.csv"),stringsAsFactors=FALSE)
-  tags.li = tags$code
-  names(tags.li) = tags$label
-  
-  uiWithTags=selectizeInput("with.tag",label="With Tag",choices=tags.li, multiple=TRUE)
-  uiWithoutTags=selectizeInput("without.tag",label="Without Tag",choices=tags.li, multiple=TRUE)
-
   about = HTML('
     <span>created by</span>
     <br>
@@ -227,22 +179,19 @@ uiArticleSelectors = function(app=getApp()) {
     <br>
   ')
   about2 = bsCollapse(bsCollapsePanel(title="About", HTML('
-  <p> The database contains information about recent articles and their data appendixes from the journals of the American Economic Association and the Review of Economic Studies. This app can help to find an interesting article for an <a href="https://github.com/skranz/RTutor" target="_blank">RTutor</a> problem set.</a>.</p>
+  <p> The database contains information about recent articles and their data appendixes from the AEA journals, RESTUD and RESTAT. This app can help to find an interesting article for an <a href="https://github.com/skranz/RTutor" target="_blank">RTutor</a> problem set.</a>.</p>
     '))) 
 
   ui = verticalLayout(
-    fluidRow(
-      actionButton("showBtn","Search")
-      #actionButton("updateBtn","Update")
-    ),
-    uiGoogle,
-    uiJel,uiJelLink,
-    bsCollapse(bsCollapsePanel(id="advancedFilterCollapse",title="Advanced Search",
-      uiMaxArticles,
+    textInput("keywords",label = "Keywords in Abstract",value = ""),
+    actionButton("showBtn","Search"),
+    br(),
+    bsCollapse(bsCollapsePanel(value="advancedFilterCollapse",title="Search Options",
+      uiIgnoreWithoutData,
       uiJournal,
       uiStartDate,uiEndDate,
-      uiWithTags,
-      uiWithoutTags        
+      #uiJel,uiJelLink,
+      uiMaxArticles
     )),
     uiSortBy,
     about2,
@@ -251,27 +200,6 @@ uiArticleSelectors = function(app=getApp()) {
   return(ui)
 }
 
-uiJEL = function(jel) {
-  restore.point("uiStagesAccordion")
-  
-  jel1 = jel[jel$digits==1,] 
-  panels.html = lapply(1:NROW(jel1), function(i){
-    restore.point("hfjfj")
-    je = jel1[i,,drop=FALSE]
-    name = je$code
-    button <- paste0(
-      '<input type="checkbox" id="',paste0("checkJEL_",name),'" checked="checked">',
-       actionButton(paste0("onlyJEL_",name),bsGlyph("icon-arrow-right"))
-    )
-    #button = checkboxInput(inputId=paste0("checkJEL_",name), label="", value = TRUE)
-    title = paste0("<h4> ",name,': ', je$label,"</h4>")
-    txt = paste0('<div>\n', "Hi",'\n</div>')
-    skCollapsePanel(HTML(title),HTML(txt),titleUI=HTML(button), id=name)
-  })
-  panels.html[[1]]
-  args = c(list(multiple = FALSE, open = NULL, id = "jelAccordion"), panels.html)
-  do.call(bsCollapse,args)
-}
 
 skCollapsePanel = function(title, ..., titleUI=NULL, id = NULL, value = NULL) 
 {
@@ -297,65 +225,9 @@ skCollapsePanel = function(title, ..., titleUI=NULL, id = NULL, value = NULL)
   )
 }
 
-shiny.articles.html.noedit = function(d=app$adt, app=getApp(), zip.link=isTRUE(app$glob$zip.link)) {
-  local.url = paste0(data.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
-  
-  if (zip.link) {
-    data.url = ifelse(nchar(d$data.url)>0,
-      paste0('<a href="file://',local.url,'">  (downloaded zip) </a>'),
-      "")
-  } else {
-    data.url = ""
-  }
-  
-  str = paste0('<p><a href="', d$url,'" target="_blank">',d$title,'</a>',
-    ' (', signif(d$data.size,4),' MB, ' , d$journ,', ', d$publication.dat,') <BR>', d$JEL,
-    '<BR> ', d$code.str, data.url,  
-    '</p>') 
-  str
-}
-
-shiny.articles.html = function(adt=app$adt, app=getApp()) {
+shiny.articles.html = function(adf=app$adf, app=getApp()) {
   restore.point("shiny.articles.html")
-  if (!isTRUE(app$opt$edit)) {
-    return(shiny.articles.html.noedit(d = adt))
-  }
-  
-  d = adt
-  
-  local.url = paste0("file:///",data.dir,"/",d$journ,"_vol_",d$vol,"_issue_",d$issue,"_article_",d$articleNum,".zip")
-
-  data.url = ifelse(nchar(d$data.url)>0,
-    paste0('<a href="',local.url,'">  (downloaded zip) </a>'),
-    "")
-
-  txt = paste0(
-    '<p><h5><a href="', d$url,'">',d$title,'</a>',
-    ' (', signif(d$data.size,4),' MB, ' , d$journ,', ', d$publication.dat,')</h5>',
-    '', d$code.str, data.url ,
-    '<br>', articles.tag.checkboxes(d,tags.csv),
-    '&nbsp;<input id="comment_',d$id,'" type="text" value=""/>', 
-    '</p>'
-  ) 
-
-  content.txt =  merge.lines(txt, collapse="\n")
-  body.txt = paste0('<body>', wrap.in.bootstrap.div(content.txt),"</body>")
-  header.txt = paste0("<header>", html.css.imports(),'\n', html.script.imports(), "</header>", sep="\n")
-  txt = paste0(header.txt, body.txt, sep="\n")
-  invisible(txt)  
-}
-
-articles.tag.checkboxes = function(d, tags) {
-  restore.point("articles.tag.checkboxes")
-  input.value = paste0(d$id)
-  li = lapply(1:NROW(tags), function(i) {
-    input.id = paste0(tags$code[i],'_',1:NROW(d))
-    checked.str = ifelse(is.true(d[[tags$code[i]]]),' checked="checked"',"")
-    paste0('<input name="',tags$code[i],'",id="',input.id,
-           '" type="checkbox"',checked.str,'value="',input.value, '"/>', tags$label[i])
-  })
-  txt = do.call("paste", c(li, list(sep="\n")))
-  txt
+  simple_articles_html(adf)
 }
 
 

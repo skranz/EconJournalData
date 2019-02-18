@@ -8,7 +8,7 @@
 
 examples.make.articles.html = function() {
   setwd("D:/libraries/EconJournalData/")
-  init.journal.scrapper() 
+  init.ejd() 
   db = get.articles.db()
   art = dbGet(db,"article")
   d = art %>%
@@ -16,59 +16,84 @@ examples.make.articles.html = function() {
     filter(date>="2014-12-01") %>%
     arrange(desc(size))
   
+  
+  d = add_code_and_data_str(d)
+  
   simple_articles_html(d,"new_articles.html", need.data=TRUE)
  
   
   df = filter(art, has.substr(title,"In a Small Moment")) 
 }
 
-simple_articles_html = function(art,file,  fs = dbGet(db,"files_summary"), db=get.articles.db(), need.data=FALSE, add.jel=FALSE, readme.base.url = "") {
+simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, readme.base.url = "") {
   restore.point("simple_articles_html")
-  d = add_code_and_data_str(d, fs)
+  d = art
+  if (!"data_code_str" %in% colnames(d)) {
+    stop("Please first call add_code_and_data_str for your articles data frame.")
+  }
 
   if (need.data) {
-    d = filter(d,data_mb>0 | archive_mb >0)
+    d = filter(d,is.na(data_mb) | data_mb>0 | archive_mb >0)
   }
   readme = ifelse(!is.na(d$readme_file),
-    paste0(' (<a href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
+    paste0(' (<a class="readme_link" href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
   
-  str = paste0('<p><a href="', d$article_url,'">','<span class="title">',d$title,'</span>','</a>',
+  str = paste0('<p class="article" id="',d$id,'"><a class="article_link" href="', d$article_url,'">','<span class="title">',d$title,'</span>','</a>',
     ' (', signif(d$size,2),' ', d$unit, ' ', d$journ,', ',format(d$date,"%Y %b"),') <BR>', d$data_code_str, readme,
     '</p>') 
   
-  writeLines(str, file)
-  
+  if (!is.null(file)) {
+    writeLines(str, file)
+    return(NULL)
+  } else {
+    return(invisible(str))
+  }
 }
 
-add_code_and_data_str = function(art, fs, opts=get.ejd.opts()) {
+
+add_code_and_data_str = function(art,opts=get.ejd.opts(),fs=dbGet(db,"files_summary"), db=get.articles.db(), file=NULL, overwrite=TRUE, s.df=NULL) {
   restore.point("add_code_and_data_str")
+  if (!is.null(file) & !overwrite & is.null(s.df)) {
+    if (file.exists(file)) {
+      s.df = readRDS(file)
+    }
+  }
+  if (is.null(s.df)) {
+    fs = filter(fs, id %in% art$id)
   
-  fs = filter(fs, id %in% art$id)
+    
+    # Code string
+    s = fs %>% group_by(id) %>%
+      summarize(
+        archive_mb = sum(mb[file_type %in% opts$file_types$archive_ext]),
+        num_data = sum(is_data),
+        data_mb = sum(mb[is_data]),
+        num_code = sum(is_code),
+        code_str = paste0(file_type[is_code]," ",signif(mb[is_code]*1000,3), " KB", collapse=", ")) %>%
+      #mutate(archive_mb = ifelse(is.na(archive_mb),0,archive_mb)) %>%
+      ungroup()
+    
+    
+    
+    s$code_str[s$num_code==0] = "no code files"
+    
+    s$data_str = ifelse(s$data_mb > 1000,
+        paste0(signif(s$data_mb/1000,3), " GB"),
+        paste0(signif(s$data_mb,3), " MB")
+      )
+    s$archive_str = ifelse(s$archive_mb > 0,paste0("Compressed ", signif(s$archive_mb,3)," MB "),"")
+    s$data_code_str = paste0(s$archive_str, ifelse(s$archive_mb>0,", ",""), "Data: ", s$data_str, ", Code: ", s$code_str)
+    
+    if (!is.null(file)) 
+      saveRDS(s, file)
+    s.df = s
+  }
 
   
-  # Code string
-  s = fs %>% group_by(id) %>%
-    summarize(
-      archive_mb = sum(mb[fs$file_type %in% opts$file_types$archive_ext]),
-      num_data = sum(is_data),
-      data_mb = sum(mb[is_data]),
-      num_code = sum(is_code),
-      code_str = paste0(file_type[is_code]," ",signif(mb[is_code]*1000,3), " KB", collapse=", ")) %>%
-    mutate(archive_mb = ifelse(is.na(archive_mb),0,archive_mb)) %>%
-    ungroup()
   
   
-  
-  s$code_str[s$num_code==0] = "no code files"
-  
-  s$data_str = ifelse(s$data_mb > 1000,
-      paste0(signif(s$data_mb/1000,3), " GB"),
-      paste0(signif(s$data_mb,3), " MB")
-    )
-  s$archive_str = ifelse(s$archive_mb > 0,paste0("Compressed ", signif(s$archive_mb,3)," MB "),"")
-  s$data_code_str = paste0(s$archive_str, "Data: ", s$data_str, ", Code: ", s$code_str)
-  
-  art = left_join(art, s[,c("id","data_code_str","data_mb","archive_mb")], by="id")
+  art = left_join(art, s.df[,c("id","data_code_str","data_mb","archive_mb")], by="id")
+  art$data_code_str[is.na(art$data_code_str)] = "Files not analyzed."
   art
 }
 

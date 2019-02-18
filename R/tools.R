@@ -1,7 +1,18 @@
 
 read_html = xml2::read_html
 
-
+nlist = function (...) {
+    li = list(...)
+    li.names = names(li)
+    names = unlist(as.list(match.call())[-1])
+    if (!is.null(li.names)) {
+        no.names = li.names == ""
+        names(li)[no.names] = names[no.names]
+    } else {
+        names(li) = names
+    }
+    li
+}
 
 is.empty = function(x) {
   if (is.null(x)) return(TRUE)
