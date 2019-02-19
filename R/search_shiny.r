@@ -189,7 +189,7 @@ search.btn.click = function(app,session,...) {
     query = opt$abs_keywords
     query = gsub(",","",query,fixed = TRUE)
     con = file(log.file,"at")
-    str = paste0(as.character(Sys.time()),",",opt$abs_keywords)
+    str = paste0(as.character(Sys.time()),",",opt$abs_keywords,",", NROW(adf))
     try(writeLines(str,con))
     close(con)
   }
