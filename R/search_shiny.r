@@ -5,11 +5,11 @@ examples.articlesApp = function() {
   init.ejd()
   opts=get.ejd.opts()
   db=get.articles.db()
-  app = articlesApp(use.lists=FALSE)
+  app = articlesApp(use.lists=FALSE, log.file="log.csv")
   viewApp(app)
 }
 
-articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE) {
+articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE, log.file=NULL) {
   restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
@@ -27,6 +27,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   app = eventsApp()
   app$glob$readme.url = readme.base.url
   app$glob$use.lists = use.lists
+  app$glob$log.file = log.file
   
   articles = dbGet(db,"article") %>%
     filter(has_data)
@@ -182,6 +183,16 @@ search.btn.click = function(app,session,...) {
   classEventHandler("articleAddBtn",event = "click",article.add.click)
   
   setUI("searchHtml",ui)
+  
+  log.file = app$glob$log.file
+  if (!is.null(log.file)) {
+    query = opt$abs_keywords
+    query = gsub(",","",query,fixed = TRUE)
+    con = file(log.file,"at")
+    str = paste0(as.character(Sys.time()),",",opt$abs_keywords)
+    try(writeLines(str,con))
+    close(con)
+  }
 }
 
 article.add.click = function(id=NULL,..., app=getApp()) {
