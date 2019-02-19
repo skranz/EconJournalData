@@ -1,8 +1,0 @@
-code, label
-"all_data", "has all data"
-"some_data", "has some data"
-"costly_data", "need costly data"
-"plus_1", "+1"
-"plus_5", "+5"
-"plus_10", "+10"
-"lab_exp", "lab experiment"

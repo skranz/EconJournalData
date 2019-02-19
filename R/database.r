@@ -1,6 +1,6 @@
 schemas.ejd = function() {
   schemas = c(
-    load.and.init.schemas(system.file("schema/articles.yaml",package = "EconJournalScrap"))
+    load.and.init.schemas(system.file("schema/articles.yaml",package = "EconJournalData"))
   )
   schemas
 }

@@ -47,7 +47,7 @@ get.ji = function(journ) {
 
 
 examples.load.jis = function() {
-  init.journal.scrapper()
+  init.ejd()
   file = paste0(base.dir,"/journal_info.yaml")
 }
 
