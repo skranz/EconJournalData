@@ -8,5 +8,5 @@ Maintainer: Sebastian Kranz <sebastian.kranz@uni-ulm.de>
 Description: Analyse meta data of economic articles with data appendices
 License: GPL >= 2.0
 Depends: dplyr, restorepoint, dplyrExtras, stringtools,
-  lubridate, tidyr, dbmisc,  dataverse
+  lubridate, tidyr, dbmisc,  dataverse, shinyAce
 RoxygenNote: 6.0.1

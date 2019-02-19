@@ -25,7 +25,7 @@ examples.make.articles.html = function() {
   df = filter(art, has.substr(title,"In a Small Moment")) 
 }
 
-simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, readme.base.url = "") {
+simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", prefix="", postfix="", extra.class="") {
   restore.point("simple_articles_html")
   d = art
   if (!"data_code_str" %in% colnames(d)) {
@@ -36,10 +36,10 @@ simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, r
     d = filter(d,is.na(data_mb) | data_mb>0 | archive_mb >0)
   }
   readme = ifelse(!is.na(d$readme_file),
-    paste0(' (<a class="readme_link" href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
+    paste0(' (<a class="readme_link"  href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
   
-  str = paste0('<p class="article" id="',d$id,'"><a class="article_link" href="', d$article_url,'">','<span class="title">',d$title,'</span>','</a>',
-    ' (', signif(d$size,2),' ', d$unit, ' ', d$journ,', ',format(d$date,"%Y %b"),') <BR>', d$data_code_str, readme,
+  str = paste0('<p class="article ',extra.class,'" id="',d$id,'">', prefix,'<a class="article_link" href="', d$article_url,'" target="_blank">','<span class="title">',d$title,'</span>','</a>',
+    ' (', signif(d$size,2),' ', d$unit, ' ', d$journ,', ',format(d$date,"%Y %b"),') <BR>', d$data_code_str, readme,postfix,
     '</p>') 
   
   if (!is.null(file)) {

@@ -5,18 +5,19 @@ examples.articlesApp = function() {
   init.ejd()
   opts=get.ejd.opts()
   db=get.articles.db()
-  app = articlesApp(show.google=FALSE)
+  app = articlesApp(use.lists=FALSE)
   viewApp(app)
 }
 
-articlesApp = function(show.google=TRUE, opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS") {
+articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE) {
   restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
   library(dplyrExtras)
   
   jis = opts$jis
-  
+
+  addResourcePath('EconJournalData', system.file('www', package='EconJournalData'))  
   
 #  jel = opts$jel.codes
 #  jel$digit1  = substring(jel$code,1,1)
@@ -24,14 +25,16 @@ articlesApp = function(show.google=TRUE, opts=get.ejd.opts(), db=get.articles.db
 #  jel$digit2 = substring(jel$code,2,2)
   
   app = eventsApp()
+  app$glob$readme.url = readme.base.url
+  app$glob$use.lists = use.lists
   
   articles = dbGet(db,"article") %>%
     filter(has_data)
   
   dat = articles %>%
     add_code_and_data_str(file = summary.file, overwrite=FALSE)
-  dat = dat[order(-dat$data_mb),]
-  dat$search_contents = tolower(paste0(dat$title," ",dat$abstract))
+
+  dat$search_contents = tolower(paste0(dat$title," ",dat$title," ",dat$title," ",dat$title," ",dat$abstract))
 
   
   app$opt = list(
@@ -44,6 +47,8 @@ articlesApp = function(show.google=TRUE, opts=get.ejd.opts(), db=get.articles.db
     #sort_by = c("desc(data_mb)"),
     edit = FALSE
   )
+  app$list.ids = NULL
+  app$list.html = NULL
   
   sort_fields = c("data_mb","date","title", "journ")
   sort_fields = c(sort_fields, paste0("desc(",sort_fields,")"))
@@ -59,41 +64,61 @@ articlesApp = function(show.google=TRUE, opts=get.ejd.opts(), db=get.articles.db
 #  app$glob$jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
   app$glob$sort_fields = sort_fields
 #  app$glob$art_jel = art_jel
-
   
   app$ui = fluidPage(
     #titlePanel("Find Economic Articles with Data",
     sidebarLayout(
       sidebarPanel(
+        h4("Find Economic Articles with Datasets and Code"),
         uiArticleSelectors()
       ),
       mainPanel(
-        uiOutput("articlesHtml") 
+        tabsetPanel(
+          tabPanel("Search Results",uiOutput("searchHtml")),
+          if (use.lists) tabPanel("Your List",
+            p("You can add search results to your selected list of articles. Use drag-and-drop to reorder the list."),
+            downloadButton("listDownloadBtn","Download list as html",class = "btn-xs"),
+            hr(),
+            uiOutput("listHtml"))
+        )
       )
-    )
+    ),
+    HTML('<script src="EconJournalData/Sortable.min.js"></script>')
   )
   html = paste0(shiny.articles.html(app$adf), collapse="\n")
-  html = paste0("<h4>",NROW(app$adf), " selected articles of ",NROW(app$glob$dat)," </h4>",html)
-  setUI("articlesHtml",HTML(html))
-  buttonHandler("showBtn",show.btn.click)
+  html = paste0("<h4>",NROW(app$adf), " newest economic articles in data base (total ",NROW(app$glob$dat),") </h4>",html)
+  setUI("searchHtml",HTML(html))
+  buttonHandler("searchBtn",search.btn.click)
+  
+  setDownloadHandler("searchDownloadBtn", 
+    filename = "foundArticles.html",
+    content = function(file) {
+      restore.point("downLoadAsRmdHandler")
+      app = getApp()
+      writeLines(shiny.articles.html(app$adf),file)
+    },
+    contentType = "text/html"
+  )
+
+  
   app
 }
 
 
-show.btn.click = function(app,session,...) {
-
+search.btn.click = function(app,session,...) {
   progress <- shiny::Progress$new(session, min=0, max=100)
   on.exit(progress$close())
 
   progress$set(message = 'Searching may take a while...')
+  restore.point("search.btn.click")
   opt = app$opt
   adf = app$glob$dat
-  fields = c("keywords", "ignore_without_data", "max_articles","journals","with_tags","without_tags","sort_by", "start_date","end_date")
+  fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","with_tags","without_tags","sort_by", "start_date","end_date")
   for (f in fields) {
     opt[[f]] = getInputValue(f)
   }
   app$opt = opt
-  restore.point("show.btn.click")
+  restore.point("search.btn.click")
   
   if (!is.null(opt$journals)) {
     adf = filter(adf, journ %in% opt$journals)
@@ -111,9 +136,9 @@ show.btn.click = function(app,session,...) {
     adf = filter(adf, date <= opt$end_date)
   }
   
-  if (!is.null(opt$keywords)) {
-    if(nchar(str.trim(opt$keywords))>0)
-      adf = abstracts.keyword.search(opt$keywords, adf, adf$search_content)
+  if (!is.null(opt$abs_keywords)) {
+    if(nchar(str.trim(opt$abs_keywords))>0)
+      adf = abstracts.keyword.search(opt$abs_keywords, adf, adf$search_content)
   }
 
   # combine = "and"
@@ -137,11 +162,63 @@ show.btn.click = function(app,session,...) {
   app$adf = adf
 
   
+  # <button id="id" style="" type="button" class="btn btn-default action-button ">name</button>
+  addBtn = paste0(' <button id="addBtn_',seq_len(NROW(adf)),'" class="btn btn-default btn-xs articleAddBtn"><i class="fa fa-plus"></i></button>')
+  if (!app$glob$use.lists) addBtn = ""
+  
+  html = shiny.articles.html(app$adf, app=app, postfix=addBtn)
+  app$html = paste0(html, collapse="\n\n")
+  
+  ui = tagList(
+    h4(paste0("Found ",NROW(app$adf), " articles (from ",NROW(app$glob$dat),") "),  downloadButton("searchDownloadBtn","Download",class = "btn-xs")),
+    HTML(html)
+  )
+  buttonHandler("showSourceBtn",function(app=getApp(),...){
+    ui = pre(style="white-space: pre-wrap;",app$html)
+    setUI("searchHtml",ui)
+  })
+  classEventHandler("articleAddBtn",event = "click",article.add.click)
+  
+  setUI("searchHtml",ui)
+}
 
-  html = paste0(shiny.articles.html(app$adf, app=app), collapse="\n")
-  html = paste0("<h4> Found ",NROW(app$adf), " articles (from ",NROW(app$glob$dat),") </h4>",html)
+article.add.click = function(id=NULL,..., app=getApp()) {
+  args = list(...)
+  restore.point("article.add.click")
+  row = as.integer(str.right.of(id, "addBtn_"))
+  art = app$adf[row,]
+  if (art$id %in% app$list.ids) {
+    showNotification(paste0("Article is already in list."), duration = 2, type="warning", closeButton = FALSE)
+    return()
+  }
+  
+  app$list.ids = unique(c(app$list.ids,art$id))
+  delBtn = paste0(' <button id="delBtn_',app$list.ids,'" class="btn btn-default btn-xs articleDelBtn"><i class="fa fa-remove"></i></button>')
+  html = simple_articles_html(art, postfix = delBtn)
+  app$list.html = c(app$list.html, html)
+  update.list.html()
+  showNotification(paste0("Add as article #", NROW(app$list.ids),"."), duration = 2, closeButton = FALSE)
+}
 
-  setUI("articlesHtml",HTML(html))
+update.list.html = function(html = app$list.html, app=getApp()) {
+  restore.point("update.list.html")
+  js = "
+    // List with handle
+    Sortable.create(articleListSortable, {});
+  "
+
+  html = paste0('<li>',html,'</li>')
+  
+  ui = tagList(
+    #div(id="listWithHandle", class="list-group"),
+    tags$ol(id="articleListSortable", HTML(html)),
+    #HTML(html),
+    tags$script(HTML(js))
+  )
+  
+  setUI("listHtml", ui)
+  dsetUI("listHtml", ui)
+  
 }
 
 uiArticleSelectors = function(app=getApp()) {
@@ -173,9 +250,9 @@ uiArticleSelectors = function(app=getApp()) {
   about = HTML('
     <span>created by</span>
     <br>
-    <span>Sebastian Kranz</span>
+    <span><a href="http://www.uni-ulm.de/mawi/mawi-wiwi/mitarbeiter/skranz.html" class="footer-link" target="_blank">Sebastian Kranz</a></span>
     <br>
-    <span><a href="http://www.uni-ulm.de/mawi/mawi-wiwi/mitarbeiter/skranz.html" class="footer-link" target="_blank">Ulm University</a></span>
+    <span><a href="https://www.uni-ulm.de/en/mawi/faculty/" class="footer-link" target="_blank">Ulm University</a></span>
     <br>
   ')
   about2 = bsCollapse(bsCollapsePanel(title="About", HTML('
@@ -183,8 +260,8 @@ uiArticleSelectors = function(app=getApp()) {
     '))) 
 
   ui = verticalLayout(
-    textInput("keywords",label = "Keywords in Abstract",value = ""),
-    actionButton("showBtn","Search"),
+    textInput("abs_keywords",label = "Keywords in Title and Abstract",value = ""),
+    simpleButton("searchBtn","Search"),
     br(),
     bsCollapse(bsCollapsePanel(value="advancedFilterCollapse",title="Search Options",
       uiIgnoreWithoutData,
@@ -225,9 +302,9 @@ skCollapsePanel = function(title, ..., titleUI=NULL, id = NULL, value = NULL)
   )
 }
 
-shiny.articles.html = function(adf=app$adf, app=getApp()) {
+shiny.articles.html = function(adf=app$adf,..., app=getApp()) {
   restore.point("shiny.articles.html")
-  simple_articles_html(adf)
+  simple_articles_html(adf,...)
 }
 
 

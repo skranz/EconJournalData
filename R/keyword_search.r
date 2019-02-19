@@ -20,7 +20,7 @@ examples.my.search = function() {
   table(res)
 }
 
-abstracts.keyword.search = function(query, articles, contents=tolower(paste0(articles$title," ",articles$abstract))) {
+abstracts.keyword.search = function(query, articles, contents=tolower(paste0(articles$title," ",articles$title," ",articles$abstract))) {
   restore.point("abstracts.keyword.search")
   keywords = query.to.keywords(tolower(query))
 
