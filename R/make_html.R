@@ -38,8 +38,20 @@ simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, r
   readme = ifelse(!is.na(d$readme_file),
     paste0(' (<a class="readme_link"  href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
   
-  str = paste0('<p class="article ',extra.class,'" id="',d$id,'">', prefix,'<a class="article_link" href="', d$article_url,'" target="_blank">','<span class="title">',d$title,'</span>','</a>',
-    ' (', signif(d$size,2),' ', d$unit, ' ', d$journ,', ',format(d$date,"%Y %b"),') <BR>', d$data_code_str, readme,postfix,
+  data_url = ifelse(!d$journ %in% c("qje","restat","jaere"),"",
+    paste0(' (<a class="article_link" href="', d$data_url,'" target="_blank">Link to Data</a>) ')  
+  )
+  
+  article_url = d$article_url
+  rows = which(is.na(d$article_url))
+  if (length(rows)>0) {
+    query = sapply(d$title[rows], URLencode)
+    article_url[rows] = paste0('http://www.google.com/search?q=',query)
+  }
+  size = ifelse(is.na(d$size),"", paste0(signif(d$size,2),' ', d$unit, ' '))
+  
+  str = paste0('<p class="article ',extra.class,'" id="',d$id,'">', prefix,'<a class="article_link" href="', article_url,'" target="_blank">','<span class="title">',d$title,'</span>','</a>',
+    ' (',size, d$journ,', ',format(d$date,"%Y %b"),') <BR>', d$data_code_str, data_url, readme,postfix,
     '</p>') 
   
   if (!is.null(file)) {
@@ -81,8 +93,12 @@ add_code_and_data_str = function(art,opts=get.ejd.opts(),fs=dbGet(db,"files_summ
         paste0(signif(s$data_mb/1000,3), " GB"),
         paste0(signif(s$data_mb,3), " MB")
       )
-    s$archive_str = ifelse(s$archive_mb > 0,paste0("Compressed ", signif(s$archive_mb,3)," MB "),"")
+    s$archive_str = ifelse(s$archive_mb > 0,paste0("Compressed ", signif(s$archive_mb,3)," MB"),"")
     s$data_code_str = paste0(s$archive_str, ifelse(s$archive_mb>0,", ",""), "Data: ", s$data_str, ", Code: ", s$code_str)
+    
+    rows = s$archive_mb>0 & s$data_mb == 0 & s$num_code == 0
+    s$data_code_str[rows] = s$archive_str[rows]
+    
     
     if (!is.null(file)) 
       saveRDS(s, file)

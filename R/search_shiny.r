@@ -65,21 +65,23 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   app$glob$sort_fields = sort_fields
 #  app$glob$art_jel = art_jel
   
+  about.html = merge.lines(readLines(system.file("html/help.html",package = "EconJournalData")))
   app$ui = fluidPage(
-    #titlePanel("Find Economic Articles with Data",
+    titlePanel("Find Economic Articles with Data"),
     sidebarLayout(
       sidebarPanel(
-        h4("Find Economic Articles with Datasets and Code"),
+        #h4("Find Economic Articles with Datasets and Code"),
         uiArticleSelectors()
       ),
       mainPanel(
         tabsetPanel(
           tabPanel("Search Results",uiOutput("searchHtml")),
-          if (use.lists) tabPanel("Your List",
-            p("You can add search results to your selected list of articles. Use drag-and-drop to reorder the list."),
-            downloadButton("listDownloadBtn","Download list as html",class = "btn-xs"),
-            hr(),
-            uiOutput("listHtml"))
+          # if (use.lists) tabPanel("Your List",
+          #   p("You can add search results to your selected list of articles. Use drag-and-drop to reorder the list."),
+          #   downloadButton("listDownloadBtn","Download list as html",class = "btn-xs"),
+          #   hr(),
+          #   uiOutput("listHtml")),
+          tabPanel("About",HTML(about.html))
         )
       )
     ),
@@ -245,33 +247,29 @@ uiArticleSelectors = function(app=getApp()) {
   uiStartDate = dateInput("start_date","Date from:",value="2005-01-01",format= "mm/yyyy")
   uiEndDate = dateInput("end_date","Date to:",value=as.Date(Sys.time()+1e6),format= "mm/yyyy")
 
-  uiIgnoreWithoutData = checkboxInput("ignore_without_data","Only articles with data",value = TRUE)
+  uiIgnoreWithoutData = checkboxInput("ignore_without_data","Only articles with data or code supplement",value = TRUE)
   
   about = HTML('
     <span>created by</span>
     <br>
-    <span><a href="http://www.uni-ulm.de/mawi/mawi-wiwi/mitarbeiter/skranz.html" class="footer-link" target="_blank">Sebastian Kranz</a></span>
+    <span><a href="https://www.uni-ulm.de/mawi/mawi-wiwi/institut/mitarbeiter/skranz/" class="footer-link" target="_blank">Sebastian Kranz</a></span>
     <br>
     <span><a href="https://www.uni-ulm.de/en/mawi/faculty/" class="footer-link" target="_blank">Ulm University</a></span>
     <br>
   ')
-  about2 = bsCollapse(bsCollapsePanel(title="About", HTML('
-  <p> The database contains information about recent articles and their data appendixes from the AEA journals, RESTUD and RESTAT. This app can help to find an interesting article for an <a href="https://github.com/skranz/RTutor" target="_blank">RTutor</a> problem set.</a>.</p>
-    '))) 
 
   ui = verticalLayout(
     textInput("abs_keywords",label = "Keywords in Title and Abstract",value = ""),
     simpleButton("searchBtn","Search"),
     br(),
-    bsCollapse(bsCollapsePanel(value="advancedFilterCollapse",title="Search Options",
+    bsCollapse(bsCollapsePanel(value="advancedFilterCollapse",title="Avdanced Options",
       uiIgnoreWithoutData,
       uiJournal,
       uiStartDate,uiEndDate,
+      uiSortBy,
       #uiJel,uiJelLink,
       uiMaxArticles
     )),
-    uiSortBy,
-    about2,
     about
   )
   return(ui)
