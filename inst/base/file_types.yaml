@@ -1,4 +1,4 @@
-code_ext: ["do","ado","r","mod","nb","py","m", "sas","prg", "ztt","c","java","cpp","js","f95","tsp","g","lng","gms","jl"]
+code_ext: ["do","ado","r","mod","nb","py","m", "sas","prg", "ztt","c","java","cpp","js","f95","f90", "tsp","g","lng","gms","jl"]
 data_ext: ["dta","csv","xls","xlsx","mat","dat","sas7bdat","rdata","rds", "xml","json", "tab"]
 archive_ext: ["7z","gz","tar","zip"]
 other_ext: []

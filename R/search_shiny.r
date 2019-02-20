@@ -45,6 +45,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     start_date = min(dat$date,na.rm=TRUE),
     end_date = max(dat$date,na.rm=TRUE),
     sort_by = c("desc(year)"),
+    file_types = NULL,
     #sort_by = c("desc(data_mb)"),
     edit = FALSE
   )
@@ -116,7 +117,7 @@ search.btn.click = function(app,session,...) {
   restore.point("search.btn.click")
   opt = app$opt
   adf = app$glob$dat
-  fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","with_tags","without_tags","sort_by", "start_date","end_date")
+  fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","sort_by", "start_date","end_date","file_types")
   for (f in fields) {
     opt[[f]] = getInputValue(f)
   }
@@ -160,6 +161,16 @@ search.btn.click = function(app,session,...) {
   #   }
   # }
 
+  if (!is.null(opt$file_types)) {
+    fs = app$glob[["fs"]]
+    if (is.null(fs)) {
+      db = get.articles.db()
+      fs=app$glob$fs = as_tibble(dbGet(db,"files_summary"))
+    }
+    cur.fs = unique(fs[fs$file_type %in% opt$file_types, "id"])
+    adf = semi_join(adf, cur.fs, by="id")
+  }
+  
   if (length(opt$sort_by)>0) 
     adf = s_arrange(adf, opt$sort_by)
   app$adf = adf
@@ -252,6 +263,14 @@ uiArticleSelectors = function(app=getApp()) {
     )
   )
 
+  ejd.opt = get.ejd.opts()
+  li = ejd.opt$file_types$code_ext
+  uiFileTypes = selectizeInput("file_types", "Require code of type",li, multiple=TRUE,
+    options = list(
+      maxItems=100
+    )
+  )
+
   #uiJel = textInput("jel","Only following JEL Codes:")
   #uiJelLink = HTML('<a href="https://www.aeaweb.org/econlit/jelCodes.php?view=jel" target="blank_">List of JEL codes</a>') 
         
@@ -279,6 +298,7 @@ uiArticleSelectors = function(app=getApp()) {
       uiStartDate,uiEndDate,
       uiSortBy,
       #uiJel,uiJelLink,
+      uiFileTypes,
       uiMaxArticles
     )),
     about
