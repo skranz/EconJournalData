@@ -1,6 +1,5 @@
 aer:
   short: aer
-  webtype: aej
   name: American Economic Review
   start_url: "https://www.aeaweb.org/journals/aer/issues"
   base_url: "https://www.aeaweb.org"
@@ -39,7 +38,6 @@ aer:
 
 aejmic:
   short: aejmic
-  webtype: aej
   name: AEJ Micro
   first_vol: 1
   first_year: 2009
@@ -56,7 +54,6 @@ aejmic:
 
 aejpol:
   short: aejpol
-  webtype: aej
   name: AEJ Policy
   first_vol: 1
   first_year: 2009
@@ -73,7 +70,6 @@ aejpol:
 
 aejapp:
   short: aejapp
-  webtype: aej
   name: AEJ Applied Economics
   first_vol: 1
   first_year: 2009
@@ -90,7 +86,6 @@ aejapp:
 
 aejmac:
   short: aejmac
-  webtype: aej
   name: AEJ Macroeconomics
   first_vol: 1
   first_year: 2009
@@ -107,7 +102,6 @@ aejmac:
 
 jep:
   short: jep
-  webtype: aej
   name: Journal of Economic Perspectives
   first_vol: 24
   first_year: 2010
@@ -121,10 +115,24 @@ jep:
       2: 4
       3: 7
       4: 10
-      
+
+ecta:
+  short: ecta
+  name: Econometrica
+  first_vol: 78
+  first_year: 2010
+  max_issues: 6
+  issue_month:
+    78:
+      1: 1
+      2: 3
+      3: 5
+      4: 7
+      5: 9
+      6: 11
+
 jpe:
   short: jpe
-  webtype: jpe
   name: Journal of Political Economy
   first_vol: 123
   first_year: 2015
@@ -144,7 +152,6 @@ jpe:
 
 qje:
   short: qje
-  webtype: oxf
   name: Quarterly Journal of Economics
   first_vol: 125
   first_year: 2010
@@ -160,7 +167,6 @@ qje:
 
 restud:
   short: restud
-  webtype: restud
   name: Review of Economic Studies
   first_vol: 77
   first_year: 2010
@@ -174,18 +180,34 @@ restud:
       3: 7
       4: 10
 
+jeea:
+  short: jeea
+  name: Review of Economic Studies
+  first_vol: 10
+  first_year: 2012
+  max_issues: 6
+  html_root: "https://academic.oup.com/jeea/"
+  base_url: "https://academic.oup.com"
+  issue_month:
+    10:
+      1: 2
+      2: 4
+      3: 6
+      4: 8
+      5: 10
+      6: 12
+
 restat:
   short: restat
-  webtype: restat
   name: The Review of Economics and Statistics
-  first_vol: 94
-  first_year: 2012
+  first_vol: 92
+  first_year: 2010
   max_issues: 5
   html_root: "http://www.mitpressjournals.org/toc/rest/"
   dataverse: TRUE
   dataverse_root: "https://dataverse.harvard.edu/dataverse/restat"
   issue_month:
-    94:
+    92:
       1: 2
       2: 5
       3: 8
