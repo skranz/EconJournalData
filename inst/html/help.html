@@ -1,23 +1,28 @@
 <br>
-<p>
-This is an R <a href="https://shiny.rstudio.com/" target="_blank">Shiny</a> app to search for economic articles that have provided data and code for replication purposes.
-</p><p>
-This can be used e.g. for teaching economics and data science. For example, my students can use the app to find an interesting topic for a Bachelor or Master Thesis in form of an interactive analysis with <a href="https://github.com/skranz/RTutor" target="_blank">RTutor</a> .
-</p><p>
-The main feature is a keyword search in the article's titles and abstracts. It returns a list with links to the articles on their journal websites and some estimates of the sizes of data files and relevant code files. By default only articles are included that have a data or code supplement.
-</p><p>
-I also tried to find and extract a README file from each supplement. Most README files explain whether all results can be replicated with the provided data sets or whether some results require confidential or propietary data sets. The link allows you to look at the README without the need to download the whole data set.
-</p><p>
-The underlying database contains information about articles and data supplements collected for the <a href="https://www.aeaweb.org/journals/" target="_blank">AEA journals</a> (including the American Economic Review, Journal of Economic Perspectives, AEA Policy, ...), the <a href="https://academic.oup.com/restud/" target="_blank">Review of Economic Studies</a>, and the <a href="https://www.mitpressjournals.org/loi/rest" target="_blank">Review of Economic and Statistics</a>.
-</p><p>
-There are also small samples from the <a href="https://academic.oup.com/qje" target="_blank">QJE</a>, the <a href="https://www.journals.uchicago.edu/toc/jpe/current" target="_blank">JPE</a> and the <a href="https://www.journals.uchicago.edu/toc/jaere/current" target="_blank">JAERE</a>. I guess these samples get larger if data availability policies become similar effective as those of the AEA journals.
-</p><p>
-If you want to analyse yourself the collected data, you can download the zipped SQLite databases using the following links:
+<h4>Search Help</h4>
 <ul>
-<li>
-Main database (should suffices for most analyses):<br><a href="http://econ.mathematik.uni-ulm.de/ejd/articles.zip">http://econ.mathematik.uni-ulm.de/ejd/articles.zip</a>
-</li><li>
- Large database containing names and sizes of all files in the data and code supplements:<br><a href="http://econ.mathematik.uni-ulm.de/ejd/articles.zip">http://econ.mathematik.uni-ulm.de/ejd/files.zip</a> 
-</li>
+<li>The keyword search does not distinguish between full words and parts of words. For example, if you want to search for articles about asymmetric information, you could enter the term <code style="white-space:nowrap">asymmetr information</code>. You then would equally well find articles whose title or abstract contains 'information asymmetry' or 'asymmetric information'</li>
+<li>Use double-quotes to find exact phrases. For example, searching for <code style="white-space:nowrap">climate change</code> finds articles that contain the words 'climate' OR 'change'. Search for <code style="white-space:nowrap">"climate change"</code> if you only want to list articles whose abstract or title contains the phrase 'climate change'.</li>
+<li>Try to avoid common words like <code>the</code>,<code>a</code>,<code>is</code> etc. This will probably return almost all articles since those words (or letter sequences) can be probably be found in almost all abstracts.</li>
+<li>The keyword search does not distinguish between lower or upper case.</li>
 </ul>
-</p>
+<br>
+<h4>Accessing Articles</h4>
+Most search results provide a link to the article on the journal homepage. If your institutition has not subscribed to the journal, you can probably buy a single articly or try searching for the the article name in your favorite search engine. In economics, freely accessible working paper versions can often be found. For most journals, the data and code supplements are freely accessible to everyone. Only the JPE seems to have put the supplements behind a pay wall. If the data and code supplement cannot be found on the article page, an extra link is added to the search results (this is mostly the case for journals who host their data on dataverse).
+<br>
+<h4>Journal Abbreviations</h4>
+<ul>
+<li>aer: American Economic Review</li>
+<li>aejmic: AEJ Micro</li>
+<li>aejpol: AEJ Policy</li>
+<li>aejapp: AEJ Applied Economics</li>
+<li>aejmac: AEJ Macroeconomics</li>
+<li>ecta: Econometrica</li>
+<li>jaere: Journal of the Association of Environmental and Resource Economists</li>
+<li>jeea: Journal of the European Economic Association</li>
+<li>jep: Journal of Economic Perspectives</li>
+<li>jpe: Journal of Political Economy</li>
+<li>qje: Quarterly Journal of Economics</li>
+<li>restud: Review of Economic Studies</li>
+<li>restat: Review of Economics and Statistics</li>
+</ul>

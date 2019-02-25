@@ -66,8 +66,10 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
 #  app$glob$jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
   app$glob$sort_fields = sort_fields
 #  app$glob$art_jel = art_jel
+
+  help.html = merge.lines(readLines(system.file("html/help.html",package = "EconJournalData")))
   
-  about.html = merge.lines(readLines(system.file("html/help.html",package = "EconJournalData")))
+  about.html = merge.lines(readLines(system.file("html/about.html",package = "EconJournalData")))
   app$ui = fluidPage(
     titlePanel("Find Economic Articles with Data"),
     sidebarLayout(
@@ -83,6 +85,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
           #   downloadButton("listDownloadBtn","Download list as html",class = "btn-xs"),
           #   hr(),
           #   uiOutput("listHtml")),
+          tabPanel("Help",HTML(help.html)),
           tabPanel("About",HTML(about.html))
         )
       )
@@ -289,6 +292,7 @@ uiArticleSelectors = function(app=getApp()) {
   ')
 
   ui = verticalLayout(
+    #div(class = "form-group shiny-input-container", tags$label("Keywords in Title and Abstract", title='Keywords', `for` = "abs_keywords"), tags$input(id = "abs_keywords", type = "text", class = "form-control", value = "", placeholder = NULL)),
     textInput("abs_keywords",label = "Keywords in Title and Abstract",value = ""),
     simpleButton("searchBtn","Search"),
     br(),
