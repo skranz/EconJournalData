@@ -5,7 +5,7 @@ examples.articlesApp = function() {
   init.ejd()
   opts=get.ejd.opts()
   db=get.articles.db()
-  app = articlesApp(use.lists=FALSE, log.file="log.csv")
+  app = articlesApp(use.lists=TRUE, log.file="log.csv")
   viewApp(app)
 }
 
@@ -18,12 +18,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   jis = opts$jis
 
   addResourcePath('EconJournalData', system.file('www', package='EconJournalData'))  
-  
-#  jel = opts$jel.codes
-#  jel$digit1  = substring(jel$code,1,1)
-#  jel$digit12 = substring(jel$code,1,2)
-#  jel$digit2 = substring(jel$code,2,2)
-  
+
   app = eventsApp()
   app$glob$readme.url = readme.base.url
   app$glob$use.lists = use.lists
@@ -62,14 +57,27 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     slice(1:200)
   
   app$glob$dat = dat
-#  app$glob$jel = jel
-#  app$glob$jel.codes = setdiff(LETTERS,c("S","T","U","V","W","X"))
   app$glob$sort_fields = sort_fields
-#  app$glob$art_jel = art_jel
 
   help.html = merge.lines(readLines(system.file("html/help.html",package = "EconJournalData")))
-  
   about.html = merge.lines(readLines(system.file("html/about.html",package = "EconJournalData")))
+  
+  
+  panels = list(
+    tabPanel("Search Results",uiOutput("searchHtml")),
+    if (use.lists) tabPanel("Your List",
+      p("You can add search results to your custom list of articles. Use drag-and-drop to reorder the list."),
+      downloadButton("customListDownloadBtn","Download HTML",class = "btn-xs"),
+      hr(),
+      tags$ol(id="customListSortable"),
+      tags$script(HTML("customListSortableCreate();"))
+      #uiOutput("listHtml")
+    ),
+    tabPanel("Help",HTML(help.html)),
+    tabPanel("About",HTML(about.html))    
+  )
+  if (!use.lists) panels = panels[-2]
+  
   app$ui = fluidPage(
     titlePanel("Find Economic Articles with Data"),
     sidebarLayout(
@@ -77,26 +85,22 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
         #h4("Find Economic Articles with Datasets and Code"),
         uiArticleSelectors()
       ),
-      mainPanel(
-        tabsetPanel(
-          tabPanel("Search Results",uiOutput("searchHtml")),
-          # if (use.lists) tabPanel("Your List",
-          #   p("You can add search results to your selected list of articles. Use drag-and-drop to reorder the list."),
-          #   downloadButton("listDownloadBtn","Download list as html",class = "btn-xs"),
-          #   hr(),
-          #   uiOutput("listHtml")),
-          tabPanel("Help",HTML(help.html)),
-          tabPanel("About",HTML(about.html))
-        )
-      )
+      mainPanel(do.call(tabsetPanel, panels))
     ),
-    HTML('<script src="EconJournalData/Sortable.min.js"></script>')
+    if (use.lists) HTML('<script src="EconJournalData/Sortable.min.js"></script>'),
+    if (use.lists) HTML('<script src="EconJournalData/ejd.js"></script>')
   )
-  html = paste0(shiny.articles.html(app$adf), collapse="\n")
+  
+  if (!app$glob$use.lists) {
+    addBtn = ""
+  } else {
+    addBtn = paste0(' <button title="Add article to your list." id="addBtn_',seq_len(NROW(app$adf)),'" class="btn btn-default btn-xs articleAddBtn"><i class="fa fa-plus"></i></button>')
+  }
+  
+  html = paste0(shiny.articles.html(app$adf,postfix=addBtn), collapse="\n")
   html = paste0("<h4>",NROW(app$adf), " newest economic articles in data base (total ",NROW(app$glob$dat),") </h4>",html)
   setUI("searchHtml",HTML(html))
   buttonHandler("searchBtn",search.btn.click)
-  
   setDownloadHandler("searchDownloadBtn", 
     filename = "foundArticles.html",
     content = function(file) {
@@ -106,11 +110,13 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     },
     contentType = "text/html"
   )
-
   
+  if (use.lists) {
+    init.list.handlers()
+  }
+
   app
 }
-
 
 search.btn.click = function(app,session,...) {
   progress <- shiny::Progress$new(session, min=0, max=100)
@@ -148,22 +154,6 @@ search.btn.click = function(app,session,...) {
       adf = abstracts.keyword.search(opt$abs_keywords, adf, adf$search_content)
   }
 
-  # combine = "and"
-  # if (!is.null(opt$jel)) {
-  #   if(nchar(str.trim(opt$jel))>0) {
-  #     jel = str.trim(opt$jel)
-  #     jel = gsub(" ",",",jel,fixed=TRUE)
-  #     jel = strsplit(jel,split = ",",fixed=TRUE)[[1]]
-  #     jel.dt = app$glob$jel.dt
-  #     id = adf$id
-  #     for (j in jel) {
-  #       new.id = unique(jel.dt$id[substring(jel.dt$jel,1,nchar(j))==j])
-  #       id = intersect(id, new.id)
-  #     }
-  #     adf = adf[adf$id %in% id,]  
-  #   }
-  # }
-
   if (!is.null(opt$file_types)) {
     fs = app$glob[["fs"]]
     if (is.null(fs)) {
@@ -179,9 +169,11 @@ search.btn.click = function(app,session,...) {
   app$adf = adf
 
   
-  # <button id="id" style="" type="button" class="btn btn-default action-button ">name</button>
-  addBtn = paste0(' <button id="addBtn_',seq_len(NROW(adf)),'" class="btn btn-default btn-xs articleAddBtn"><i class="fa fa-plus"></i></button>')
-  if (!app$glob$use.lists) addBtn = ""
+  if (!app$glob$use.lists) {
+    addBtn = ""
+  } else {
+    addBtn = paste0(' <button id="addBtn_',seq_len(NROW(adf)),'" title="Add article to your list." class="btn btn-default btn-xs articleAddBtn"><i class="fa fa-plus"></i></button>')
+  }
   
   html = shiny.articles.html(app$adf, app=app, postfix=addBtn)
   app$html = paste0(html, collapse="\n\n")
@@ -190,12 +182,7 @@ search.btn.click = function(app,session,...) {
     h4(paste0("Found ",NROW(app$adf), " articles (from ",NROW(app$glob$dat),") "),  downloadButton("searchDownloadBtn","Download",class = "btn-xs")),
     HTML(html)
   )
-  buttonHandler("showSourceBtn",function(app=getApp(),...){
-    ui = pre(style="white-space: pre-wrap;",app$html)
-    setUI("searchHtml",ui)
-  })
-  classEventHandler("articleAddBtn",event = "click",article.add.click)
-  
+
   setUI("searchHtml",ui)
   
   log.file = app$glob$log.file
@@ -207,45 +194,6 @@ search.btn.click = function(app,session,...) {
     try(writeLines(str,con))
     close(con)
   }
-}
-
-article.add.click = function(id=NULL,..., app=getApp()) {
-  args = list(...)
-  restore.point("article.add.click")
-  row = as.integer(str.right.of(id, "addBtn_"))
-  art = app$adf[row,]
-  if (art$id %in% app$list.ids) {
-    showNotification(paste0("Article is already in list."), duration = 2, type="warning", closeButton = FALSE)
-    return()
-  }
-  
-  app$list.ids = unique(c(app$list.ids,art$id))
-  delBtn = paste0(' <button id="delBtn_',app$list.ids,'" class="btn btn-default btn-xs articleDelBtn"><i class="fa fa-remove"></i></button>')
-  html = simple_articles_html(art, postfix = delBtn)
-  app$list.html = c(app$list.html, html)
-  update.list.html()
-  showNotification(paste0("Add as article #", NROW(app$list.ids),"."), duration = 2, closeButton = FALSE)
-}
-
-update.list.html = function(html = app$list.html, app=getApp()) {
-  restore.point("update.list.html")
-  js = "
-    // List with handle
-    Sortable.create(articleListSortable, {});
-  "
-
-  html = paste0('<li>',html,'</li>')
-  
-  ui = tagList(
-    #div(id="listWithHandle", class="list-group"),
-    tags$ol(id="articleListSortable", HTML(html)),
-    #HTML(html),
-    tags$script(HTML(js))
-  )
-  
-  setUI("listHtml", ui)
-  dsetUI("listHtml", ui)
-  
 }
 
 uiArticleSelectors = function(app=getApp()) {
@@ -274,9 +222,6 @@ uiArticleSelectors = function(app=getApp()) {
     )
   )
 
-  #uiJel = textInput("jel","Only following JEL Codes:")
-  #uiJelLink = HTML('<a href="https://www.aeaweb.org/econlit/jelCodes.php?view=jel" target="blank_">List of JEL codes</a>') 
-        
   uiStartDate = dateInput("start_date","Date from:",value="2005-01-01",format= "mm/yyyy")
   uiEndDate = dateInput("end_date","Date to:",value=as.Date(Sys.time()+1e6),format= "mm/yyyy")
 
@@ -296,12 +241,13 @@ uiArticleSelectors = function(app=getApp()) {
     textInput("abs_keywords",label = "Keywords in Title and Abstract",value = ""),
     simpleButton("searchBtn","Search"),
     br(),
-    bsCollapse(bsCollapsePanel(value="advancedFilterCollapse",title="Avdanced Options",
+    bsCollapse(bsCollapsePanel(value="advancedFilterCollapse",
+    #wellPanel(skCollapsePanel(
+      title="Avdanced Options",
       uiIgnoreWithoutData,
       uiJournal,
       uiStartDate,uiEndDate,
       uiSortBy,
-      #uiJel,uiJelLink,
       uiFileTypes,
       uiMaxArticles
     )),
