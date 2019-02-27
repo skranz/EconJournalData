@@ -5,11 +5,11 @@ examples.articlesApp = function() {
   init.ejd()
   opts=get.ejd.opts()
   db=get.articles.db()
-  app = articlesApp(use.lists=TRUE, log.file="log.csv")
+  app = articlesApp(use.lists=TRUE, log.file="log.csv", userid = "sebkranz", edit.tags=TRUE)
   viewApp(app)
 }
 
-articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE, log.file=NULL) {
+articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags) {
   restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
@@ -20,9 +20,14 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   addResourcePath('EconJournalData', system.file('www', package='EconJournalData'))  
 
   app = eventsApp()
-  app$glob$readme.url = readme.base.url
-  app$glob$use.lists = use.lists
-  app$glob$log.file = log.file
+  glob = app$glob
+  glob$readme.url = readme.base.url
+  glob$use.lists = use.lists
+  glob$userid = userid
+  glob$edit.tags = edit.tags
+  glob$show.tags = show.tags
+  glob$log.file = log.file
+  
   
   articles = dbGet(db,"article") %>%
     filter(has_data)
@@ -30,6 +35,12 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   dat = articles %>%
     add_code_and_data_str(file = summary.file, overwrite=FALSE)
 
+  if (edit.tags | show.tags) {
+    cdb = get.custom.db()
+    atags = dbGet(cdb, "article_tags")
+    dat = left_join(dat, atags, by="id")
+  }
+  
   dat$search_contents = tolower(paste0(dat$title," ",dat$title," ",dat$title," ",dat$title," ",dat$abstract))
 
   
@@ -46,6 +57,10 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   )
   app$list.ids = NULL
   app$list.html = NULL
+  
+  if (!is.null(userid)) {
+    app$list.ids = load.custom.list(userid)$ids
+  }
   
   sort_fields = c("data_mb","date","title", "journ")
   sort_fields = c(sort_fields, paste0("desc(",sort_fields,")"))
@@ -65,14 +80,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   
   panels = list(
     tabPanel("Search Results",uiOutput("searchHtml")),
-    if (use.lists) tabPanel("Your List",
-      p("You can add search results to your custom list of articles. Use drag-and-drop to reorder the list."),
-      downloadButton("customListDownloadBtn","Download HTML",class = "btn-xs"),
-      hr(),
-      tags$ol(id="customListSortable"),
-      tags$script(HTML("customListSortableCreate();"))
-      #uiOutput("listHtml")
-    ),
+    if (use.lists) custom.list.panel.ui(app=app),
     tabPanel("Help",HTML(help.html)),
     tabPanel("About",HTML(about.html))    
   )
@@ -98,7 +106,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   }
   
   html = paste0(shiny.articles.html(app$adf,postfix=addBtn), collapse="\n")
-  html = paste0("<h4>",NROW(app$adf), " newest economic articles in data base (total ",NROW(app$glob$dat),") </h4>",html)
+  html = paste0("<h4>",NROW(app$adf), " newest economic articles in data base (total ",NROW(app$glob$dat),") </h4>","<ol>",html,"</ol>")
   setUI("searchHtml",HTML(html))
   buttonHandler("searchBtn",search.btn.click)
   setDownloadHandler("searchDownloadBtn", 
@@ -114,8 +122,25 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   if (use.lists) {
     init.list.handlers()
   }
+  
+  if (edit.tags) {
+    eventHandler("editTagChange","editTagChange",change.edit.tag)  }
 
   app
+}
+
+# Change edit tags
+change.edit.tag = function(value,..., app=getApp()) {
+  restore.point("change.edit.tag")
+  cu = value
+  if (is.null(cu$open_data) | isTRUE(cu$open_data == "U")) cu$open_data = NA
+  if (is.null(cu$like)) cu$like = NA
+  cu$like = as.integer(cu$like)
+  cu$comment = NA
+  cu$taken = cu$taken == "yes"
+  cdb = get.custom.db()
+  dbInsert(cdb,"article_tags", cu, mode="replace")
+  
 }
 
 search.btn.click = function(app,session,...) {
@@ -169,18 +194,13 @@ search.btn.click = function(app,session,...) {
   app$adf = adf
 
   
-  if (!app$glob$use.lists) {
-    addBtn = ""
-  } else {
-    addBtn = paste0(' <button id="addBtn_',seq_len(NROW(adf)),'" title="Add article to your list." class="btn btn-default btn-xs articleAddBtn"><i class="fa fa-plus"></i></button>')
-  }
   
-  html = shiny.articles.html(app$adf, app=app, postfix=addBtn)
+  html = shiny.articles.html(app$adf, app=app)
   app$html = paste0(html, collapse="\n\n")
   
   ui = tagList(
     h4(paste0("Found ",NROW(app$adf), " articles (from ",NROW(app$glob$dat),") "),  downloadButton("searchDownloadBtn","Download",class = "btn-xs")),
-    HTML(html)
+    tags$ol(HTML(html))
   )
 
   setUI("searchHtml",ui)
@@ -281,9 +301,45 @@ skCollapsePanel = function(title, ..., titleUI=NULL, id = NULL, value = NULL)
   )
 }
 
-shiny.articles.html = function(adf=app$adf,..., app=getApp()) {
+shiny.articles.html = function(adf=app$adf, add.btn=isTRUE(app$glob$use.lists),del.btn=FALSE, edit.tags=isTRUE(app$glob$edit.tags),add.li=TRUE,...,no.add.rows=NA, app=getApp()) {
   restore.point("shiny.articles.html")
-  simple_articles_html(adf,...)
+  postfix = rep("", NROW(adf))
+  if (add.btn) {
+    if (identical(no.add.rows,NA)) {
+      no.add.rows = match(app$list.ids, adf$id)
+    }
+    addBtn = paste0(' <button id="addBtn_',seq_len(NROW(adf)),'" title="Add article to your list." class="btn btn-default btn-xs articleAddBtn"><i class="fa fa-plus"></i></button>')
+    addBtn[no.add.rows] = ""
+    postfix=paste0(postfix, addBtn)
+  }
+  if (del.btn) {
+    delBtn = paste0(' <button id="delBtn_',adf$id,'" class="btn btn-default btn-xs customListDelBtn"><i class="fa fa-remove"></i></button>')
+    postfix=paste0(postfix, delBtn)
+  }
+  if (edit.tags) {
+    n = NROW(adf)
+    
+    # Open Data
+    str = radioGroupButtonsVector("open_data",values = adf$open_data,
+      choices = c("O","R","P","U"), labels = c("O","R","P","?"),size="xs")
+    ed = str
+    # Like Button
+    str = radioGroupButtonsVector("like",values = as.character(adf$like),
+      choices = c("2", "1","0","U"), labels = c("+2","+1", "0","?"),size="xs")
+    ed = paste0(ed, " ", str)
+    str = radioGroupButtonsVector("taken",values = ifelse(vec.is.true(adf$taken),"yes","no"),
+      choices = c("no","yes"), labels = c("Free","Taken"),size="xs")
+    ed = paste0(ed, " ", str)
+    ed = paste0('<span class="edit_tags" id="edit_tags_', adf$id,'"  data-art="', adf$id,'">', ed,'</span>')
+    
+    postfix = paste0(postfix," ", ed)
+  }
+  
+  html = simple_articles_html(adf,postfix=postfix)
+  if (add.li) {
+    html = paste0("<li>", html,"</li>")
+  }
+  html
 }
 
 

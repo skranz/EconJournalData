@@ -1,0 +1,24 @@
+# library(dbmisc);dbCreateSQLiteFromSchema(update=TRUE, system.file("schema/custom.yaml", package="EconJournalData"),db.name = "custom.sqlite",db.dir = "D:/libraries/EconJournalData")
+
+
+article_tags:
+  table:
+    id: CHARACTER(20)
+    open_data: CHARACTER(1) # "", "O"=open,"R"=restriced,"P"=partly open
+    taken: BOOLEAN
+    like: INTEGER # 1 good, # 2 very good, # 0 not good
+    comment: TEXT
+  indexes:
+    - "CREATE UNIQUE INDEX tags1 on article_tags (id)"
+
+lists:
+  table:
+    listid: CHARACTER(20)
+    userid: CHARACTER(20)
+    title: TEXT
+    descr: TEXT
+    ids: TEXT
+    public: BOOLEAN
+  indexes:
+    - "CREATE UNIQUE INDEX lists1 on lists (listid)"
+    - "CREATE INDEX lists2 on lists (userid)"

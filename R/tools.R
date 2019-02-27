@@ -1,6 +1,11 @@
 
 read_html = xml2::read_html
 
+vec.is.true = function(val) {
+  val[is.na(val)] = FALSE
+  return(val)
+}
+
 nlist = function (...) {
     li = list(...)
     li.names = names(li)
