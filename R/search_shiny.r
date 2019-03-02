@@ -5,11 +5,11 @@ examples.articlesApp = function() {
   init.ejd()
   opts=get.ejd.opts()
   db=get.articles.db()
-  app = articlesApp(use.lists=TRUE, log.file="log.csv", userid = "sebkranz", edit.tags=TRUE)
+  app = articlesApp(use.lists=TRUE, log.file="log.csv", userid = "sebkranz", edit.tags=TRUE, show.likes=TRUE)
   viewApp(app)
 }
 
-articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags) {
+articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags, show.likes=FALSE) {
   restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
@@ -26,6 +26,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   glob$userid = userid
   glob$edit.tags = edit.tags
   glob$show.tags = show.tags
+  glob$show.likes = show.likes
   glob$log.file = log.file
   
   
@@ -35,13 +36,20 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   dat = articles %>%
     add_code_and_data_str(file = summary.file, overwrite=FALSE)
 
+  
   if (edit.tags | show.tags) {
     cdb = get.custom.db()
     atags = dbGet(cdb, "article_tags")
     dat = left_join(dat, atags, by="id")
   }
+  if (!file.exists("authors_summary.RDS")) {
+    authors = make.authors.summary.rds()
+  } else {
+    authors = readRDS("authors_summary.RDS")
+  }
+  dat = left_join(dat, authors, by="id")
   
-  dat$search_contents = tolower(paste0(dat$title," ",dat$title," ",dat$title," ",dat$title," ",dat$abstract))
+  dat$search_contents = tolower(paste0(dat$title," ",dat$title," ",dat$title," ",dat$title," ",dat$abstract, " ", dat$authors))
 
   
   app$opt = list(
@@ -53,7 +61,9 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     sort_by = c("desc(year)"),
     file_types = NULL,
     #sort_by = c("desc(data_mb)"),
-    edit = FALSE
+    edit = FALSE,
+    open_data = "all"
+    
   )
   app$list.ids = NULL
   app$list.html = NULL
@@ -135,12 +145,26 @@ change.edit.tag = function(value,..., app=getApp()) {
   cu = value
   if (is.null(cu$open_data) | isTRUE(cu$open_data == "U")) cu$open_data = NA
   if (is.null(cu$like)) cu$like = NA
+  if (is.null(cu$complex)) cu$complex = NA
+  if (is.null(cu$experiment)) cu$experiment = NA
   cu$like = as.integer(cu$like)
+  cu$complex = as.integer(cu$complex)
   cu$comment = NA
   cu$taken = cu$taken == "yes"
+  
+  # Update DB
   cdb = get.custom.db()
   dbInsert(cdb,"article_tags", cu, mode="replace")
   
+  # Update data in memory
+  tcu = as_tibble(cu)
+  dat.row = match(cu$id, app$glob$dat$id)
+  if (!is.na(dat.row))
+    app$glob$dat[dat.row,names(cu)] = tcu
+  adf.row = match(cu$id, app$adf)  
+  if (!is.na(adf.row))
+    app$adf[adf.row,names(cu)] = tcu
+  invisible(cu)  
 }
 
 search.btn.click = function(app,session,...) {
@@ -191,6 +215,12 @@ search.btn.click = function(app,session,...) {
   
   if (length(opt$sort_by)>0) 
     adf = s_arrange(adf, opt$sort_by)
+  
+  
+  
+  if (!is.na(max_art <- as.integer(opt$max_articles)) & NROW(adf)>0) {
+    adf = adf[1:min(max_art, NROW(adf)),,drop=FALSE]
+  } 
   app$adf = adf
 
   
@@ -256,6 +286,18 @@ uiArticleSelectors = function(app=getApp()) {
     <br>
   ')
 
+  uiTags = tagList(
+    if (app$glob$show.tags)
+      selectInput("open_data", "Articles with Data marked as Confidential / Propietary", choices=list("Show all"="all","Ommit"="no_R","Require explicit flag that all data is open."="only_O")),
+    if (app$glob$show.likes)
+      selectInput("like", "Recommended", choices=list("Show all"=0,"Only Recommended"=1,"Only strongly recommended"=2)),
+    if (app$glob$show.tags)
+      selectInput("experiments", "Tagged as Experiment", choices=list("Show all"="all","Only Experiments"="exp","Only Field Experiments"="F","Only Lab Experiments"="L", "No experiments"="no")),
+    if (app$glob$edit.tags)
+      selectInput("has_tags", "Manually Tagged?", choices=list("Show all"="all","Is tagged"="has_tags","Is not tagged"="no_tags"))
+    
+  )
+  
   ui = verticalLayout(
     #div(class = "form-group shiny-input-container", tags$label("Keywords in Title and Abstract", title='Keywords', `for` = "abs_keywords"), tags$input(id = "abs_keywords", type = "text", class = "form-control", value = "", placeholder = NULL)),
     textInput("abs_keywords",label = "Keywords in Title and Abstract",value = ""),
@@ -269,7 +311,8 @@ uiArticleSelectors = function(app=getApp()) {
       uiStartDate,uiEndDate,
       uiSortBy,
       uiFileTypes,
-      uiMaxArticles
+      uiMaxArticles,
+      uiTags
     )),
     about
   )
@@ -327,6 +370,11 @@ shiny.articles.html = function(adf=app$adf, add.btn=isTRUE(app$glob$use.lists),d
     str = radioGroupButtonsVector("like",values = as.character(adf$like),
       choices = c("2", "1","0","U"), labels = c("+2","+1", "0","?"),size="xs")
     ed = paste0(ed, " ", str)
+    str = radioGroupButtonsVector("complex",values = ifelse(vec.is.true(adf$complex==1),"1","0"),
+      choices = c("1","0"), labels = c("complex","?"),size="xs")
+    ed = paste0(ed, " ", str)
+    str = radioGroupButtonsVector("experiment",values = adf$experiment, choices = c("E","F","O"), labels = c("E","F","-"),size="xs")
+    ed = paste0(ed, " ", str)
     str = radioGroupButtonsVector("taken",values = ifelse(vec.is.true(adf$taken),"yes","no"),
       choices = c("no","yes"), labels = c("Free","Taken"),size="xs")
     ed = paste0(ed, " ", str)
@@ -343,3 +391,12 @@ shiny.articles.html = function(adf=app$adf, add.btn=isTRUE(app$glob$use.lists),d
 }
 
 
+
+make.authors.summary.rds = function(db=get.articles.db(), authors = dbGet(db,"author"), file="authors_summary.RDS") {
+  asum = authors %>% 
+    group_by(id) %>%
+    summarise(authors = paste0(author, collapse="; ")) %>%
+    ungroup()
+  saveRDS(asum, file) 
+  invisible(asum)
+}

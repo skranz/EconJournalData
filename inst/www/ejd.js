@@ -34,10 +34,12 @@ $(document).on("change","span.edit_tags input",function(evt) {
   var open_data = $(parent).find("span.open_data input:checked").val();
   var like = $(parent).find("span.like input:checked").val();
   var taken = $(parent).find("span.taken input:checked").val();
+  var complex = $(parent).find("span.complex input:checked").val();
+  var experiment = $(parent).find("span.experiment input:checked").val();
   
   var artid = $(parent).data("art");
 
 	Shiny.onInputChange("editTagChange",
-	  {eventId: "editTagChange",id: "editTagChange", value: {id: artid, open_data: open_data, like: like, taken: taken},nonce: Math.random()}
+	  {eventId: "editTagChange",id: "editTagChange", value: {id: artid, open_data: open_data, like: like, taken: taken, complex: complex, experiment: experiment},nonce: Math.random()}
 	);
 });

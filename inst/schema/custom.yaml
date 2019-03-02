@@ -7,6 +7,8 @@ article_tags:
     open_data: CHARACTER(1) # "", "O"=open,"R"=restriced,"P"=partly open
     taken: BOOLEAN
     like: INTEGER # 1 good, # 2 very good, # 0 not good
+    complex: INTEGER #1 complex # 0 not particularly
+    experiment: CHARACTER(1) # "E" (Lab)-Experiment, "F" Field Experiment, "O" Other=No experiment
     comment: TEXT
   indexes:
     - "CREATE UNIQUE INDEX tags1 on article_tags (id)"

@@ -25,7 +25,7 @@ examples.make.articles.html = function() {
   df = filter(art, has.substr(title,"In a Small Moment")) 
 }
 
-simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", prefix="", postfix="", extra.class="") {
+simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", prefix="", postfix="", extra.class="", add.search=FALSE) {
   restore.point("simple_articles_html")
   d = art
   if (!"data_code_str" %in% colnames(d)) {
