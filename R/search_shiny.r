@@ -36,11 +36,15 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   dat = articles %>%
     add_code_and_data_str(file = summary.file, overwrite=FALSE)
 
-  
+
   if (edit.tags | show.tags) {
     cdb = get.custom.db()
     atags = dbGet(cdb, "article_tags")
+    atags$has_tags = TRUE
     dat = left_join(dat, atags, by="id")
+    dat$has_tags[is.na(dat$has_tags)] = FALSE
+  } else {
+    dat$has_tags = FALSE
   }
   if (!file.exists("authors_summary.RDS")) {
     authors = make.authors.summary.rds()
@@ -62,8 +66,8 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     file_types = NULL,
     #sort_by = c("desc(data_mb)"),
     edit = FALSE,
-    open_data = "all"
-    
+    open_data = "all",
+    has_tags ="all"
   )
   app$list.ids = NULL
   app$list.html = NULL
@@ -157,6 +161,7 @@ change.edit.tag = function(value,..., app=getApp()) {
   dbInsert(cdb,"article_tags", cu, mode="replace")
   
   # Update data in memory
+  cu$has_tags = TRUE
   tcu = as_tibble(cu)
   dat.row = match(cu$id, app$glob$dat$id)
   if (!is.na(dat.row))
@@ -175,7 +180,7 @@ search.btn.click = function(app,session,...) {
   restore.point("search.btn.click")
   opt = app$opt
   adf = app$glob$dat
-  fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","sort_by", "start_date","end_date","file_types")
+  fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","sort_by", "start_date","end_date","file_types","open_data","has_tags")
   for (f in fields) {
     opt[[f]] = getInputValue(f)
   }
@@ -211,6 +216,15 @@ search.btn.click = function(app,session,...) {
     }
     cur.fs = unique(fs[fs$file_type %in% opt$file_types, "id"])
     adf = semi_join(adf, cur.fs, by="id")
+  }
+  
+  if (opt$has_tags!="all") {
+    restore.point("uzfezgfteak")
+    if (opt$has_tags == "has_tags") {
+      adf = adf[adf$has_tags,,drop=FALSE]
+    } else if (opt$has_tags == "no_tags") {
+      adf = adf[!adf$has_tags,,drop=FALSE]
+    }
   }
   
   if (length(opt$sort_by)>0) 
