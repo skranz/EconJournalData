@@ -39,7 +39,7 @@ simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, r
     paste0(' (<a class="readme_link"  href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
   
   data_url = ifelse(!d$journ %in% c("qje","restat","jaere"),"",
-    paste0(' (<a class="article_link" href="', d$data_url,'" target="_blank">Link to Data</a>) ')  
+    paste0(' (<a class="data_link" href="', d$data_url,'" target="_blank">Link to Data</a>) ')  
   )
   
   article_url = d$article_url

@@ -6,10 +6,11 @@ examples.articlesApp = function() {
   opts=get.ejd.opts()
   db=get.articles.db()
   app = articlesApp(use.lists=TRUE, log.file="log.csv", userid = "sebkranz", edit.tags=TRUE, show.likes=TRUE)
+  app = articlesApp(log.file="log.csv")
   viewApp(app)
 }
 
-articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=TRUE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags, show.likes=FALSE) {
+articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=FALSE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags, show.likes=FALSE) {
   restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
@@ -27,8 +28,12 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   glob$edit.tags = edit.tags
   glob$show.tags = show.tags
   glob$show.likes = show.likes
-  glob$log.file = log.file
-  
+  if (!is.null(log.file)) {
+    glob$log.file = log.file
+    file = tools::file_path_sans_ext(log.file)
+    glob$login.log.file = paste0(file,"_logins.csv")
+    glob$link.log.file = paste0(file,"_links.csv")
+  }
   
   articles = dbGet(db,"article") %>%
     filter(has_data)
@@ -67,7 +72,8 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     #sort_by = c("desc(data_mb)"),
     edit = FALSE,
     open_data = "all",
-    has_tags ="all"
+    has_tags ="all",
+    like = 0
   )
   app$list.ids = NULL
   app$list.html = NULL
@@ -77,7 +83,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   }
   
   sort_fields = c("data_mb","date","title", "journ")
-  sort_fields = c(sort_fields, paste0("desc(",sort_fields,")"))
+  sort_fields = c(paste0("desc(",sort_fields,")"),sort_fields)
   
 #  art_jel = dbGet(db,"jel")
   
@@ -110,7 +116,8 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
       mainPanel(do.call(tabsetPanel, panels))
     ),
     if (use.lists) HTML('<script src="EconJournalData/Sortable.min.js"></script>'),
-    if (use.lists) HTML('<script src="EconJournalData/ejd.js"></script>')
+    if (use.lists) HTML('<script src="EconJournalData/lists.js"></script>'),
+    HTML('<script src="EconJournalData/ejd.js"></script>')
   )
   
   if (!app$glob$use.lists) {
@@ -128,7 +135,7 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     content = function(file) {
       restore.point("downLoadAsRmdHandler")
       app = getApp()
-      writeLines(shiny.articles.html(app$adf),file)
+      writeLines(shiny.articles.html(app$adf,edit.tags = FALSE, add.btn=FALSE,add.li = FALSE, show.tags="complex"),file)
     },
     contentType = "text/html"
   )
@@ -140,7 +147,29 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   if (edit.tags) {
     eventHandler("editTagChange","editTagChange",change.edit.tag)  }
 
+  if (!is.null(log.file)) {
+     eventHandler("linkClick","linkClick",fun=link.click)
+  }
+  
+  shinyEvents::appInitHandler(function(session,app=getApp(),...) {
+    app$id = random.string()
+    str = paste0(Sys.time(),",",app$id)
+    write.log(str, glob$login.log.file)
+  })
+  
   app
+}
+
+link.click = function(value, ..., app=getApp()) {
+   restore.point("link.click")
+   rank = match(value$id, app$adf$id)
+   if (is.na(rank)) return()
+   title = app$adf$title[rank]
+   title = gsub(",", " ",title, fixed=TRUE)
+   type = str.left.of(value$type, "_link")
+   str = paste0(list(as.character(Sys.time()),app$id, value$id,type,rank, title),collapse=",")
+   write.log(str, app$glob$link.log.file)
+  
 }
 
 # Change edit tags
@@ -169,6 +198,8 @@ change.edit.tag = function(value,..., app=getApp()) {
   adf.row = match(cu$id, app$adf)  
   if (!is.na(adf.row))
     app$adf[adf.row,names(cu)] = tcu
+  
+  
   invisible(cu)  
 }
 
@@ -180,7 +211,7 @@ search.btn.click = function(app,session,...) {
   restore.point("search.btn.click")
   opt = app$opt
   adf = app$glob$dat
-  fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","sort_by", "start_date","end_date","file_types","open_data","has_tags")
+  fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","sort_by", "start_date","end_date","file_types","open_data","has_tags","like")
   for (f in fields) {
     opt[[f]] = getInputValue(f)
   }
@@ -208,6 +239,14 @@ search.btn.click = function(app,session,...) {
       adf = abstracts.keyword.search(opt$abs_keywords, adf, adf$search_content)
   }
 
+  if (isTRUE(opt$like>0)) {
+    if (opt$like == 0.5) {
+      adf = filter(adf,is.na(like) | vec.is.true(like>0))
+    } else {
+      adf = filter(adf,vec.is.true(like>=opt$like))
+    }
+  }
+  
   if (!is.null(opt$file_types)) {
     fs = app$glob[["fs"]]
     if (is.null(fs)) {
@@ -218,14 +257,15 @@ search.btn.click = function(app,session,...) {
     adf = semi_join(adf, cur.fs, by="id")
   }
   
-  if (opt$has_tags!="all") {
-    restore.point("uzfezgfteak")
+  if (isTRUE(opt$has_tags!="all")) {
     if (opt$has_tags == "has_tags") {
       adf = adf[adf$has_tags,,drop=FALSE]
     } else if (opt$has_tags == "no_tags") {
       adf = adf[!adf$has_tags,,drop=FALSE]
     }
   }
+  
+  
   
   if (length(opt$sort_by)>0) 
     adf = s_arrange(adf, opt$sort_by)
@@ -253,11 +293,17 @@ search.btn.click = function(app,session,...) {
   if (!is.null(log.file)) {
     query = opt$abs_keywords
     query = gsub(",","",query,fixed = TRUE)
-    con = file(log.file,"at")
-    str = paste0(as.character(Sys.time()),",",opt$abs_keywords,",", NROW(adf))
-    try(writeLines(str,con))
-    close(con)
+    str = paste0(as.character(Sys.time()),",",opt$abs_keywords,",", NROW(adf), ",", app$id)
+    write.log(str, log.file)
   }
+}
+
+write.log = function(str, log.file) {
+  restore.point("write.log")
+  if (is.null(log.file)) return()
+  con = file(log.file,"at")
+  try(writeLines(str,con))
+  close(con)
 }
 
 uiArticleSelectors = function(app=getApp()) {
@@ -304,7 +350,7 @@ uiArticleSelectors = function(app=getApp()) {
     if (app$glob$show.tags)
       selectInput("open_data", "Articles with Data marked as Confidential / Propietary", choices=list("Show all"="all","Ommit"="no_R","Require explicit flag that all data is open."="only_O")),
     if (app$glob$show.likes)
-      selectInput("like", "Recommended", choices=list("Show all"=0,"Only Recommended"=1,"Only strongly recommended"=2)),
+      selectInput("like", "Recommended", choices=list("Show all"=0,"Only recommended or unrated"=0.5, "Only recommended"=1,"Only strongly recommended"=2)),
     if (app$glob$show.tags)
       selectInput("experiments", "Tagged as Experiment", choices=list("Show all"="all","Only Experiments"="exp","Only Field Experiments"="F","Only Lab Experiments"="L", "No experiments"="no")),
     if (app$glob$edit.tags)
@@ -358,7 +404,7 @@ skCollapsePanel = function(title, ..., titleUI=NULL, id = NULL, value = NULL)
   )
 }
 
-shiny.articles.html = function(adf=app$adf, add.btn=isTRUE(app$glob$use.lists),del.btn=FALSE, edit.tags=isTRUE(app$glob$edit.tags),add.li=TRUE,...,no.add.rows=NA, app=getApp()) {
+shiny.articles.html = function(adf=app$adf, add.btn=isTRUE(app$glob$use.lists),del.btn=FALSE, edit.tags=isTRUE(app$glob$edit.tags),add.li=TRUE,...,no.add.rows=NA, show.tags=NULL, app=getApp()) {
   restore.point("shiny.articles.html")
   postfix = rep("", NROW(adf))
   if (add.btn) {
@@ -396,6 +442,10 @@ shiny.articles.html = function(adf=app$adf, add.btn=isTRUE(app$glob$use.lists),d
     
     postfix = paste0(postfix," ", ed)
   }
+  if ("complex" %in% show.tags) {
+    postfix = paste0(postfix, ifelse(vec.is.true(adf$complex)," <em>complex</em>",""))
+  }
+  
   
   html = simple_articles_html(adf,postfix=postfix)
   if (add.li) {

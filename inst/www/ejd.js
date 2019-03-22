@@ -1,28 +1,18 @@
-addCustomListElement = function(html) {
-  $("#customListSortable").append(html);
-  customListSortableCreate();
-};
 
-customListSortableChange = function(evt) {
-  var IDs = [];
-  $("#customListSortable").find("li p").each(function(){ IDs.push(this.id); });
-	Shiny.onInputChange("customListChange",
-	  {eventId: "customListChange",id: "customListChange", value: IDs,nonce: Math.random()}
-	);
-};
-
-customListSortableCreate = function() {
-  Sortable.create(customListSortable, {
-    onSort: customListSortableChange
-  });
-};
-
-$(document).on("click",".customListDelBtn",function(evt) {
+// Click on link
+$(document).on("mousedown","a",function(evt) {
   // Remove list item
-  evt.currentTarget.closest("li").remove();
-  // Send message to R
-  customListSortableChange(evt);
+  var type = $(evt.currentTarget).attr('class');
+  var parent = evt.currentTarget.closest("p");
+  
+  //var title = $(parent).find("span.title").html();
+  var artid = parent.id;
+
+	Shiny.onInputChange("linkClick",
+	  {eventId: "linkClick",id: "linkClick", value: {id: artid, type: type},nonce: Math.random()}
+	);
 });
+
 
 // Change of an edit tag input
 $(document).on("change","span.edit_tags input",function(evt) {
