@@ -69,7 +69,7 @@ article.add.click = function(id=NULL,..., app=getApp()) {
   }
   
   app$list.ids = c(app$list.ids,art$id)
-  shiny.articles.html(art,add.btn=FALSE, del.btn=TRUE)
+  html = shiny.articles.html(art,add.btn=FALSE, del.btn=TRUE)
   callJS("addCustomListElement",html)
   showNotification(paste0("Add as article #", NROW(app$list.ids),"."), duration = 2, closeButton = FALSE)
   

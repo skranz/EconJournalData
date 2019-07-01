@@ -6,11 +6,13 @@ examples.articlesApp = function() {
   opts=get.ejd.opts()
   db=get.articles.db()
   app = articlesApp(use.lists=TRUE, log.file="log.csv", userid = "sebkranz", edit.tags=TRUE, show.likes=TRUE)
+  viewApp(app)
+  
   app = articlesApp(log.file="log.csv")
   viewApp(app)
 }
 
-articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=FALSE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags, show.likes=FALSE) {
+articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=FALSE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags, show.likes=FALSE, ga.js = NULL, statcounter.js=NULL) {
   restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
@@ -106,7 +108,9 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   )
   if (!use.lists) panels = panels[-2]
   
+  
   app$ui = fluidPage(
+    if (!is.null(ga.js)) tags$head(HTML(ga.js)),
     titlePanel("Find Economic Articles with Data"),
     sidebarLayout(
       sidebarPanel(
@@ -117,7 +121,9 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     ),
     if (use.lists) HTML('<script src="EconJournalData/Sortable.min.js"></script>'),
     if (use.lists) HTML('<script src="EconJournalData/lists.js"></script>'),
-    HTML('<script src="EconJournalData/ejd.js"></script>')
+    HTML('<script src="EconJournalData/ejd.js"></script>'),
+    if (!is.null(statcounter.js)) HTML(statcounter.js)
+
   )
   
   if (!app$glob$use.lists) {
@@ -365,7 +371,7 @@ uiArticleSelectors = function(app=getApp()) {
     br(),
     bsCollapse(bsCollapsePanel(value="advancedFilterCollapse",
     #wellPanel(skCollapsePanel(
-      title="Avdanced Options",
+      title="Advanced Options",
       uiIgnoreWithoutData,
       uiJournal,
       uiStartDate,uiEndDate,
