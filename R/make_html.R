@@ -7,13 +7,14 @@
 # 4. Generate html sites
 
 examples.make.articles.html = function() {
-  setwd("D:/libraries/EconJournalData/")
+  #setwd("D:/libraries/EconJournalData/")
+  setwd("~")
   init.ejd() 
   db = get.articles.db()
   art = dbGet(db,"article")
   d = art %>%
     filter(has_data) %>%
-    filter(date>="2014-12-01") %>%
+    filter(date>="2020-08-01") %>%
     arrange(desc(size))
   
   
@@ -35,10 +36,12 @@ simple_articles_html = function(art,file=NULL, need.data=FALSE, add.jel=FALSE, r
   if (need.data) {
     d = filter(d,is.na(data_mb) | data_mb>0 | archive_mb >0)
   }
-  readme = ifelse(!is.na(d$readme_file),
-    paste0(' (<a class="readme_link"  href="', readme.base.url,"/", d$readme_file,'" target="_blank">README</a>)'),"")
   
-  data_url = ifelse(!d$journ %in% c("qje","restat","jaere"),"",
+  readme.base.url = ifelse(startsWith(d$readme_file,"https://"),"",readme.base.url)
+  readme = ifelse(is.na(d$readme_file),"",
+    paste0(' (<a class="readme_link"  href="', readme.base.url, d$readme_file,'" target="_blank">README</a>)'))
+  
+  data_url = ifelse((!d$journ %in% c("qje","restat","jaere")) & is.na(d$repo),"",
     paste0(' (<a class="data_link" href="', d$data_url,'" target="_blank">Link to Data</a>) ')  
   )
   

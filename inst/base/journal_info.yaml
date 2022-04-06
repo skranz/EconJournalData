@@ -36,6 +36,33 @@ aer:
       11: 11
       12: 12
 
+
+aeri:
+  short: aeri
+  name: AER Insights
+  first_vol: 1
+  first_year: 2019
+  max_issues: 4
+  start_url: "https://www.aeaweb.org/journals/aeri/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "https://www.aeaweb.org/journals/aeri/issues"
+  issue_month:
+    1:
+      1: 6
+
+pandp:
+  short: pandp
+  name: AEA Papers and Proceedings
+  first_vol: 108
+  first_year: 2018
+  max_issues: 1
+  start_url: "https://www.aeaweb.org/journals/pandp/issues"
+  base_url: "https://www.aeaweb.org"
+  html_root: "https://www.aeaweb.org/journals/pandp/issues"
+  issue_month:
+    1:
+      1: 5
+
 aejmic:
   short: aejmic
   name: AEJ Micro
@@ -111,6 +138,20 @@ jep:
   html_root: "http://www.aeaweb.org/articles.php?doi=10.1257/jep"
   issue_month:
     24:
+      1: 1
+      2: 4
+      3: 7
+      4: 10
+
+jole:
+  short: jole
+  name: Journal of Labour Economics
+  first_vol: 33
+  first_year: 2015
+  max_issues: 4
+  issues_url: "https://www.journals.uchicago.edu/loi/jole"
+  issue_month:
+    33:
       1: 1
       2: 4
       3: 7

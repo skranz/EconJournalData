@@ -13,6 +13,21 @@ $(document).on("mousedown","a",function(evt) {
 	);
 });
 
+// Click on method tag
+$(document).on("click",".mtag",function(evt) {
+  // Remove list item
+  var el = evt.currentTarget;
+  
+  //var title = $(parent).find("span.title").html();
+  var tag = el.innerHTML;
+  var searchterm = ($("#abs_keywords").val() + ' "'+tag+'"').trim();
+  
+  $("#abs_keywords").val(searchterm);
+  
+	Shiny.onInputChange("methodTagClick",
+	  {eventId: "methodTagClick",id: "methodTagClick", value: searchterm,nonce: Math.random()}
+	);
+});
 
 // Change of an edit tag input
 $(document).on("change","span.edit_tags input",function(evt) {

@@ -71,7 +71,7 @@ init.ji = function(ji) {
   
   vols = ji$first_vol:ji$max_vol
   years = ji$first_year:ji$max_year
-  vol.info = data_frame(journ=ji$short,year=years,vol=vols,  num_issues = ji$max_issues)
+  vol.info = tibble(journ=ji$short,year=years,vol=vols,  num_issues = ji$max_issues)
   
   if (length(ji$issue_month)>1) {
     prev.vol = ji$first_vol

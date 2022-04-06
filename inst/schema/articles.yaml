@@ -1,4 +1,4 @@
-# library(dbmisc);dbCreateSQLiteFromSchema(update=TRUE, system.file("schema/articles.yaml", package="EconJournalData"),db.name = "articles.sqlite",db.dir = "D:/libraries/EconJournalData")
+# library(dbmisc);dbCreateSQLiteFromSchema(update=TRUE, system.file("schema/articles.yaml", package="EconJournalScrap"),db.name = "articles.sqlite",db.dir = "D:/libraries/EconJournalData")
 
 
 article:
@@ -23,6 +23,8 @@ article:
     file_info_summarized: BOOLEAN
     abstract: TEXT
     readme_file: TEXT
+    repo: CHARACTER(3)
+    repo_info: TEXT
   defaults:
     file_info_stored: FALSE
     file_info_summarized: FALSE

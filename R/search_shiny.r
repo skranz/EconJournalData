@@ -1,18 +1,29 @@
 examples.articlesApp = function() {
   library(EconJournalData)
-  setwd("D:/libraries/EconJournalData/")
+  setwd("C:/libraries/EconJournalData/")
   restore.point.options(display.restore.point = TRUE)
   init.ejd()
   opts=get.ejd.opts()
   db=get.articles.db()
-  app = articlesApp(use.lists=TRUE, log.file="log.csv", userid = "sebkranz", edit.tags=TRUE, show.likes=TRUE)
-  viewApp(app)
+  app = articlesApp(log.file="log.csv" , method.count.file = "method_count.Rds", method.str.file = "method_str.Rds" )
+  viewApp(app,url.args = list(search="energy pollution", sortby="date"))
   
-  app = articlesApp(log.file="log.csv")
+  # Google analytics
+  ga.js = '
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-38596287-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+
+  gtag("config", "UA-38596287-2");
+</script>'
+
+  #app = articlesApp(log.file="log.csv", ga.js=ga.js)
   viewApp(app)
 }
 
-articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=FALSE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags, show.likes=FALSE, ga.js = NULL, statcounter.js=NULL) {
+articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file = "articles_summary.RDS", method.count.file = NULL, method.str.file=NULL, readme.base.url = "http://econ.mathematik.uni-ulm.de/ejd/readme_files/", use.lists=FALSE, log.file=NULL, userid = NULL, edit.tags=FALSE, show.tags=edit.tags, show.likes=FALSE, ga.js = NULL, statcounter.js=NULL) {
   restore.point("articlesApp")
   library(shinyEvents)
   library(shinyBS)
@@ -37,12 +48,23 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     glob$link.log.file = paste0(file,"_links.csv")
   }
   
+  if (!is.null(method.count.file)) {
+    glob$method.count.li = readRDS(method.count.file)
+  }
+  
   articles = dbGet(db,"article") %>%
     filter(has_data)
   
   dat = articles %>%
     add_code_and_data_str(file = summary.file, overwrite=FALSE)
 
+  if (!is.null(method.str.file)) {
+    msdf = readRDS(method.str.file)
+    dat = left_join(dat, msdf)
+    dat$method.count.str[is.na(dat$method.count.str)] = ""
+    br = ifelse(dat$method.count.str == "","","<BR>")
+    dat$data_code_str = paste0(dat$method.count.str,br, dat$data_code_str)
+  }
 
   if (edit.tags | show.tags) {
     cdb = get.custom.db()
@@ -59,8 +81,9 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     authors = readRDS("authors_summary.RDS")
   }
   dat = left_join(dat, authors, by="id")
-  
-  dat$search_contents = tolower(paste0(dat$title," ",dat$title," ",dat$title," ",dat$title," ",dat$abstract, " ", dat$authors))
+
+  dat$Search_Contents = paste0(dat$title," ",dat$title," ",dat$title," ",dat$title," ",dat$abstract, " ", dat$authors)
+  dat$search_contents = tolower(dat$Search_Contents)
 
   
   app$opt = list(
@@ -104,12 +127,26 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
     tabPanel("Search Results",uiOutput("searchHtml")),
     if (use.lists) custom.list.panel.ui(app=app),
     tabPanel("Help",HTML(help.html)),
-    tabPanel("About",HTML(about.html))    
+    tabPanel("About",HTML(about.html)),
+    tabPanel("Replications", HTML('<p><br>If you search for replication studies or want to enter replication studies, take a look at the <a href="https://replication.uni-goettingen.de/wiki/index.php/Main_Page" target="_blank">Replication Wiki</a> or the <a href="https://i4replication.org/">Institute for Replication</a>. Both sites also feature very helpful collections of links to additional material on replication, in particular, teaching ressources.</p> <p>You can also check out some interactive replications with an educational focus in form of <a href="https://skranz.github.io/RTutor/" target="_blank">RTutor problem sets</a>.</p>'))
   )
   if (!use.lists) panels = panels[-2]
   
+  css = '
+.mtag, .mcount {
+  font-size: 0.95em;
+  color: #555;
+  font-style: italic;
+}  
+.mtag:hover {
+  color: #000;
+  font-weight: bold;
+  cursor:pointer;
+}
+  '
   
   app$ui = fluidPage(
+    tags$head(tags$style(css)),
     if (!is.null(ga.js)) tags$head(HTML(ga.js)),
     titlePanel("Find Economic Articles with Data"),
     sidebarLayout(
@@ -156,15 +193,36 @@ articlesApp = function(opts=get.ejd.opts(), db=get.articles.db(), summary.file =
   if (!is.null(log.file)) {
      eventHandler("linkClick","linkClick",fun=link.click)
   }
+
+  eventHandler("methodTagClick","methodTagClick",method.tag.click)
   
   shinyEvents::appInitHandler(function(session,app=getApp(),...) {
     app$id = random.string()
     str = paste0(Sys.time(),",",app$id)
     write.log(str, glob$login.log.file)
+    
+    observe({
+      query <- parseQueryString(session$clientData$url_search)
+      search = query$search
+      restore.point("klsjfjdlkf")
+      if (!is.null(search)) {
+        search = gsub(","," ", search, fixed=TRUE)
+        updateTextInput(session, "abs_keywords", value = search)
+        fixed.opt = NULL
+        if (!is.null(query$sortby)) {
+          if (query$sortby=="date") {
+            fixed.opt = list(sort_by="desc(date)")
+          }
+        }
+        search.btn.click(fixed.search.term=search, fixed.opt=fixed.opt)
+        cat("\nApp called with URL parameter search=", search)
+      }
+    })
   })
   
   app
 }
+
 
 link.click = function(value, ..., app=getApp()) {
    restore.point("link.click")
@@ -209,20 +267,41 @@ change.edit.tag = function(value,..., app=getApp()) {
   invisible(cu)  
 }
 
-search.btn.click = function(app,session,...) {
+
+method.tag.click = function(value,...) {
+  restore.point("method.tag.click")
+  search.btn.click(fixed.search.term = value)
+}
+
+search.btn.click = function(app=getApp(),session=app$session,fixed.search.term=NULL, fixed.opt=NULL, ...) {
   progress <- shiny::Progress$new(session, min=0, max=100)
   on.exit(progress$close())
 
   progress$set(message = 'Searching may take a while...')
-  restore.point("search.btn.click")
+  #restore.point("search.btn.click")
   opt = app$opt
   adf = app$glob$dat
   fields = c("abs_keywords", "ignore_without_data", "max_articles","journals","sort_by", "start_date","end_date","file_types","open_data","has_tags","like")
   for (f in fields) {
     opt[[f]] = getInputValue(f)
   }
+  if (!is.null(fixed.search.term)) {
+    opt[["abs_keywords"]] = fixed.search.term
+  }
+  if (!is.null(fixed.opt)){
+    opt[names(fixed.opt)] = fixed.opt
+  }
+  
+  restore.point("search.btn.click2")
+  
+  # If no search term or sorting condition is
+  # entered, sort in descending order by date
+  if (is.empty(opt[["abs_keywords"]]) & is.empty(opt[["sort_by"]])) {
+    opt$sort_by = "desc(date)"
+  }
+  
   app$opt = opt
-  restore.point("search.btn.click")
+  
   
   if (!is.null(opt$journals)) {
     adf = filter(adf, journ %in% opt$journals)
@@ -242,7 +321,7 @@ search.btn.click = function(app,session,...) {
   
   if (!is.null(opt$abs_keywords)) {
     if(nchar(str.trim(opt$abs_keywords))>0)
-      adf = abstracts.keyword.search(opt$abs_keywords, adf, adf$search_content)
+      adf = do.keyword.search(opt$abs_keywords, adf, Contents=adf$Search_Contents, contents= adf$search_content)
   }
 
   if (isTRUE(opt$like>0)) {

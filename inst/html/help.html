@@ -1,27 +1,121 @@
 <br>
 <h4>Search Help</h4>
 <ul>
-<li>The keyword search does not distinguish between full words and parts of words. For example, if you want to search for articles about asymmetric information, you could enter the term <code style="white-space:nowrap">asymmetr information</code>. You then would equally well find articles whose title or abstract contains 'information asymmetry' or 'asymmetric information'</li>
+<li>By default you search in an article's title, abstract and list of authors. In addition there are special methodological keywords that were previously counted in the full texts (see below).
+
+The basic search does not distinguish between full words and parts of words. For example, if you want to search for articles about asymmetric information, you could enter the term <code style="white-space:nowrap">asymmetr information</code>. You then would equally well find articles whose title or abstract contains 'information asymmetry' or 'asymmetric information'</li>
 <li>Use double-quotes to find exact phrases. For example, searching for <code style="white-space:nowrap">climate change</code> finds articles that contain the words 'climate' OR 'change'. Search for <code style="white-space:nowrap">"climate change"</code> if you only want to list articles whose abstract or title contains the phrase 'climate change'.</li>
 <li>Try to avoid common words like <code>the</code>,<code>a</code>,<code>is</code> etc. This will probably return almost all articles since those words (or letter sequences) can be probably be found in almost all abstracts.</li>
-<li>The keyword search does not distinguish between lower or upper case.</li>
+<li>If your search term is entered in lower case, also upper case occurences in the abstract or title will be matched, but not the other way round.
+Method keywords like <code>IV</code> will be just matched to upper case when stored as uppercase in our method list even if entered in lower case.</li>
 </ul>
+
+<h4>Search Terms as URL Parameter</h4>
+
+You can now also provide search terms as URL parameters. This can e.g. be useful as a bookmark to get an update about new articles with data supplement for areas you are interested in. For example, the following link shows the newest articles that contain the terms <code>energy</code>, <code>banking</code> and <code>placebo test</code>
+<br>
+<a href='https://ejd.econ.mathematik.uni-ulm.de/search=energy,banking,"placebo%20test"&sortby=date'>https://ejd.econ.mathematik.uni-ulm.de/search=energy,banking,"placebo test"&sortby=date</a>
+<br>
+If you leave out the <code>sortby=date</code>, you get the most relevant hits for your search phrases. Try out:
+<br>
+<a href='https://ejd.econ.mathematik.uni-ulm.de/search=energy,banking,"placebo%20test"'>https://ejd.econ.mathematik.uni-ulm.de/search=energy,banking,"placebo test"</a>
+<br>
+That might be useful for sharing links with other people.
+
+
+
+
+<h4>Special methodological keywords</h4>
+
+For most articles, but not from all journals, I have parsed the full texts for certain methodological keywords. You can also type those keyword in the search field (case-sensitive and quotes for multi-word keywords). The following table shows the keywords and the string matching patterns that yield one count. You can also click on a keyword shown below an article in the search results to add it to the search phase.
+
+<style>
+#method_help tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+#method_help td {
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+#method_help th {
+  padding-left: 1em;
+  padding-right: 1em;
+  
+  margin-top: 1em;
+  border-bottom: solid 1px;
+}
+</style>
+
+<table id="method_help">
+<tr><th>Keyword</th><th>Patterns matched in full texts (leading spaces omitted)</th></tr>
+
+<tr><td><span class="mtag">ARIMA</span></td><td>ARIMA</td></tr>
+<tr><td><span class="mtag">ARMA</span></td><td>ARMA</td></tr>
+<tr><td><span class="mtag">ATE</span></td><td> ATE, average treatment effect</td></tr>
+<tr><td><span class="mtag">ATT</span></td><td> ATT</td></tr>
+<tr><td><span class="mtag">Bayesian</span></td><td>bayesian</td></tr>
+<tr><td><span class="mtag">BLP</span></td><td>BLP</td></tr>
+<tr><td><span class="mtag">bootstrap</span></td><td>bootstrap</td></tr>
+<tr><td><span class="mtag">cointegration</span></td><td>cointegrat, co-integrat</td></tr>
+<tr><td><span class="mtag">conditional logit</span></td><td>conditional logit</td></tr>
+<tr><td><span class="mtag">credible interval</span></td><td>credible interval</td></tr>
+<tr><td><span class="mtag">cross validation</span></td><td>cross validation</td></tr>
+<tr><td><span class="mtag">DID</span></td><td>difference-in-difference, DID, DiD, DD, difference in difference, differences-in-difference</td></tr>
+<tr><td><span class="mtag">DSGE</span></td><td>DSGE</td></tr>
+<tr><td><span class="mtag">equilibrium</span></td><td>equilibrium</td></tr>
+<tr><td><span class="mtag">field experiment</span></td><td>field experiment</td></tr>
+<tr><td><span class="mtag">fixed effect</span></td><td>fixed-effect, fixed effect</td></tr>
+<tr><td><span class="mtag">GARCH</span></td><td>GARCH</td></tr>
+<tr><td><span class="mtag">GMM</span></td><td>GMM, generalized method of moments</td></tr>
+<tr><td><span class="mtag">IV</span></td><td>instrumental variable,  instrument </td></tr>
+<tr><td><span class="mtag">lab experiment</span></td><td>laboratory experiment, laboratory study, lab experiment, experimental laboratory</td></tr>
+<tr><td><span class="mtag">lasso</span></td><td>lasso</td></tr>
+<tr><td><span class="mtag">LATE</span></td><td> LATE, local average treatment effect</td></tr>
+<tr><td><span class="mtag">logit</span></td><td>logit</td></tr>
+<tr><td><span class="mtag">machine learning</span></td><td>machine learning</td></tr>
+<tr><td><span class="mtag">MLE</span></td><td>MLE, maximum likelihood</td></tr>
+<tr><td><span class="mtag">multinomial</span></td><td>multinomial</td></tr>
+<tr><td><span class="mtag">multiple testing</span></td><td>multiple testing</td></tr>
+<tr><td><span class="mtag">natural experiment</span></td><td>natural experiment</td></tr>
+<tr><td><span class="mtag">nonparametric</span></td><td>nonparametric, non-parametric</td></tr>
+<tr><td><span class="mtag">panel data</span></td><td>panel data</td></tr>
+<tr><td><span class="mtag">placebo test</span></td><td>placebo test</td></tr>
+<tr><td><span class="mtag">posterior</span></td><td>posterior distribution</td></tr>
+<tr><td><span class="mtag">potential outcome</span></td><td>potential outcome</td></tr>
+<tr><td><span class="mtag">probit</span></td><td>probit</td></tr>
+<tr><td><span class="mtag">random effect</span></td><td>random effect</td></tr>
+<tr><td><span class="mtag">random forest</span></td><td>random forest</td></tr>
+<tr><td><span class="mtag">RCT</span></td><td>RCT, randomized controlled trial</td></tr>
+<tr><td><span class="mtag">RDD</span></td><td>regression discontinuity, RD</td></tr>
+<tr><td><span class="mtag">SUTVA</span></td><td>SUTVA</td></tr>
+<tr><td><span class="mtag">SVAR</span></td><td>SVAR</td></tr>
+<tr><td><span class="mtag">synthetic control</span></td><td>synthetic control</td></tr>
+<tr><td><span class="mtag">time series</span></td><td>time series</td></tr>
+<tr><td><span class="mtag">VAR</span></td><td>VAR</td></tr>
+<tr><td><span class="mtag">weak instrument</span></td><td>weak instrument</td></tr>
+
+
+</table>
+
 <br>
 <h4>Accessing Articles</h4>
-Most search results provide a link to the article on the journal homepage. If your institutition has not subscribed to the journal, you can probably buy a single articly or try searching for the the article name in your favorite search engine. In economics, freely accessible working paper versions can often be found. For most journals, the data and code supplements are freely accessible to everyone. Only the JPE seems to have put the supplements behind a pay wall. If the data and code supplement cannot be found on the article page, an extra link is added to the search results (this is mostly the case for journals who host their data on dataverse).
+Most search results provide a link to the article on the journal homepage. If your institutition has not subscribed to the journal, you can probably buy a single article or try searching for the article name in your favorite search engine. In economics, freely accessible working paper versions can often be found. For most (but not all) journals, the data and code supplements are freely accessible to everyone. If the data and code supplement is on another page (e.g. on Dataverse), a link is added to the search results.
 <br>
 <h4>Journal Abbreviations</h4>
 <ul>
-<li>aer: American Economic Review</li>
 <li>aejmic: AEJ Micro</li>
 <li>aejpol: AEJ Policy</li>
 <li>aejapp: AEJ Applied Economics</li>
 <li>aejmac: AEJ Macroeconomics</li>
+<li>aer: American Economic Review</li>
+<li>aeri: AER Insights</li>
 <li>ecta: Econometrica</li>
 <li>jaere: Journal of the Association of Environmental and Resource Economists</li>
 <li>jeea: Journal of the European Economic Association</li>
 <li>jep: Journal of Economic Perspectives</li>
 <li>jpe: Journal of Political Economy</li>
+<li>pandp: AEA Papers and Proceedings</li>
 <li>qje: Quarterly Journal of Economics</li>
 <li>restud: Review of Economic Studies</li>
 <li>restat: Review of Economics and Statistics</li>
